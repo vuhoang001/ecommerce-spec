@@ -1,6 +1,55 @@
 <!--
 SYNC IMPACT REPORT
 ==================
+Version change: 2.1.0 -> 2.2.0
+
+Bump rationale: MINOR. A new principle section and new rules are added; the Technology Constraints
+stack is widened to admit a frontend. No rule is withdrawn or redefined, and nothing compliant with
+2.1.0 becomes non-compliant.
+
+Added sections:
+- X. Frontend (UIX)
+
+Added rules:
+- UIX-001 the frontend is a separate deployable, reaching no backend assembly, database, or broker
+- UIX-002 the backend is consumed only through the published OpenAPI contract, via a generated
+          client
+- UIX-003 money is rendered from server-supplied minor units; client-side money arithmetic is
+          FORBIDDEN. JavaScript has one numeric type and it is a float, so without this rule
+          TXN-006's integer guarantee is lost at the boundary it exists to protect
+- UIX-004 every interactive element is keyboard reachable and operable
+- UIX-005 PrimeVue is the sole component library
+- DEP-001 every deployable ships as a container image built by CI from a checked-in Dockerfile
+- DEP-002 frontend and backend images are independently buildable and releasable
+
+Added to the closed stack (STK-001):
+- Vue and PrimeVue on Node LTS — the frontend named in this amendment. Versions are pinned in the
+                                 frontend feature's plan.md, as ".NET 8" is pinned for the backend.
+- Docker                       — DEP-001 makes container packaging the delivery mechanism for
+                                 every deployable, which STK-001 did not previously permit.
+
+Modified sections:
+- Technology Constraints — stack split into backend and frontend; STK-001's enforcement extended
+  to cover the frontend package manifest, since a JavaScript dependency tree is otherwise outside
+  every check this document has.
+
+Removed sections: none
+
+Assumption recorded: the frontend lives in THIS repository as a separate deployable — a monorepo
+producing two images. UIX-001 is worded to hold under a separate repository too, but its CI check
+is only meaningful in a monorepo. Revisit the wording if the frontend moves out.
+
+Follow-up TODOs (deferred — outside this command's scope):
+- No frontend feature exists yet. The Vue/PrimeVue version pins, SSR-vs-SPA, state management,
+  and routing all belong in that feature's plan.md, not here.
+- specs/002-product-catalog/plan.md states "No frontend in this repository." Correct or mark
+  superseded when the frontend feature lands.
+- UIX-001 through UIX-005 and DEP-001/002 have no enforcement tests yet. Under GATE-001 a rule
+  whose check does not run is unenforced; write the CI checks before relying on them.
+
+--------------------------------------------------------------------------------
+Previous report retained for history.
+
 Version change: 2.0.0 -> 2.1.0
 
 Bump rationale: MINOR. The Technology Constraints stack is expanded to name components that
@@ -231,9 +280,35 @@ Rule IDs are stable and immutable. Cite them in reviews.
   correlation identifier and a reason code. *Enforced by: acceptance test per feature asserting the
   log entry exists carrying its reason code.*
 
+### X. Frontend (UIX)
+
+- **UIX-001**: The frontend is a separate deployable. It MUST NOT reference a backend assembly,
+  open a database connection, or consume the message broker. Its only contact with the system is
+  the backend's published HTTP contract. *Enforced by: CI check that the frontend dependency tree
+  contains no database driver, no broker client, and no path into `src/`.*
+- **UIX-002**: The frontend MUST consume the backend only through the published OpenAPI contract,
+  via a client generated from it. Hand-written calls to undocumented paths are FORBIDDEN.
+  *Enforced by: CI regenerating the client from `specs/*/contracts/*.openapi.yaml` and failing on a
+  diff; lint rule banning HTTP calls outside the generated client.*
+- **UIX-003**: Monetary amounts MUST be rendered from the server-supplied integer minor units and
+  formatted only. Arithmetic on a monetary field in client code is FORBIDDEN. JavaScript has a
+  single numeric type and it is a float; without this rule TXN-006's guarantee is defeated at the
+  boundary it was written to protect. *Enforced by: lint rule banning arithmetic operators on the
+  generated client's money type; component test asserting a discounted and an original price
+  render exactly as the server supplied them.*
+- **UIX-004**: Every interactive element MUST be reachable and operable by keyboard alone.
+  *Enforced by: automated accessibility check in CI over every route.*
+- **UIX-005**: PrimeVue is the sole component library. A second component library or CSS framework,
+  or a hand-rolled replacement for a component PrimeVue provides, is FORBIDDEN. *Enforced by: CI
+  allowlist check over the frontend package manifest.*
+
 ## Technology Constraints
 
-- .NET 8, PostgreSQL, RabbitMQ, EF Core, Dapper. One solution, one deployable process.
+- Backend: .NET 8, PostgreSQL, RabbitMQ, EF Core, Dapper. One solution, one deployable
+  process.
+- Frontend: Vue and PrimeVue on Node LTS. A separate deployable, released independently of
+  the backend. Exact versions are pinned in the frontend feature's `plan.md`.
+- Docker, for the container packaging DEP-001 requires of every deployable.
 - gRPC and Protocol Buffers, for the cross-module read contract COM-001 requires. Message types
   are generated; the transport may be in-process before a module is extracted.
 - Serilog, for the structured logging with correlation identifiers OBS-001 requires.
@@ -244,7 +319,15 @@ Rule IDs are stable and immutable. Cite them in reviews.
 - Warnings are errors. Analyzers and architecture tests run in CI on every pull request.
 - **STK-001**: The stack above is closed. Adding a runtime component requires an amendment to this
   document naming the component, the rationale, and the enforcement mechanism. *Enforced by: CI
-  check that every `PackageVersion` in `Directory.Packages.props` maps to an approved component.*
+  check that every `PackageVersion` in `Directory.Packages.props` and every dependency in
+  the frontend package manifest maps to an approved component.*
+- **DEP-001**: Every deployable artifact MUST ship as a container image built by CI from a
+  Dockerfile checked into the repository. Build or install steps performed outside the image
+  are FORBIDDEN. *Enforced by: CI asserting each deployable has a Dockerfile and that its
+  image builds from a clean checkout.*
+- **DEP-002**: The frontend and backend images MUST be independently buildable and releasable.
+  Neither build may require the other's toolchain or source. *Enforced by: CI building each
+  image in an isolated job given only its own source tree.*
 
 ## Development Workflow
 
@@ -275,4 +358,4 @@ generated plan, this document wins.
   by: CI job inventory; a test asserting every rule identifier in this document has a
   correspondingly named test.*
 
-**Version**: 2.1.0 | **Ratified**: 2026-09-04 | **Last Amended**: 2026-09-04
+**Version**: 2.2.0 | **Ratified**: 2026-09-04 | **Last Amended**: 2026-09-04

@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 
@@ -47,6 +46,16 @@ public class Gate001RuleCoverageTests
         ["QAG-004"] = "InboxDeduplicationTests",
         ["QAG-005"] = "N/A — no contended resource is written here",
         ["QAG-006"] = "every infrastructure suite runs on Testcontainers",
+        ["SEC-001"] = "N/A — no credential is created, stored or verified here " +
+                      "(architecture-burndown.md)",
+        ["SEC-002"] = "N/A — no credential storage (architecture-burndown.md)",
+        ["SEC-003"] = "N/A for authentication, but the concern is met anyway: FR-002 requires a " +
+                      "Hidden product to be reported identically to a non-existent one, asserted " +
+                      "byte-for-byte by ProductDetailVisibilityTests",
+        ["SEC-004"] = "N/A — the catalogue is anonymous (FR-034) and exposes no per-resource " +
+                      "permission (architecture-burndown.md)",
+        ["SEC-005"] = "N/A — no security-relevant event on an anonymous read path " +
+                      "(architecture-burndown.md)",
         ["SEC-006"] = "PriceRangeValidator, EnvelopeValidator, route constraints",
         ["OBS-001"] = "ProductPriceResolver logging; PromotionRejectionTests",
         ["SPC-001"] = "spec.md keyword scan",
@@ -109,11 +118,40 @@ public class Gate001RuleCoverageTests
             "that is exactly the drift this test exists to catch");
     }
 
+    /// <summary>
+    /// Test class names, read from source on disk rather than from loaded assemblies.
+    /// </summary>
+    /// <remarks>
+    /// A previous version enumerated <c>AppDomain.CurrentDomain.GetAssemblies()</c>, which returns
+    /// only what has already been loaded. Whether a given test assembly was loaded depended on
+    /// which xUnit test happened to run first, so the check was a race — it passed locally and
+    /// failed in CI on the same commit. Reading declarations from source is deterministic and
+    /// independent of load order and of which project is executing.
+    /// </remarks>
+    private static HashSet<string> TestClassNames()
+    {
+        var names = new HashSet<string>(StringComparer.Ordinal);
+        var testRoot = Path.Combine(RepoRoot(), "tests");
+
+        foreach (var file in Directory.EnumerateFiles(testRoot, "*.cs", SearchOption.AllDirectories))
+        {
+            var sep = Path.DirectorySeparatorChar;
+            if (file.Contains($"{sep}obj{sep}") || file.Contains($"{sep}bin{sep}")) continue;
+
+            foreach (Match declaration in Regex.Matches(
+                         File.ReadAllText(file), @"class\s+([A-Za-z_][A-Za-z0-9_]*)"))
+            {
+                names.Add(declaration.Groups[1].Value);
+            }
+        }
+
+        return names;
+    }
+
     [Fact]
     public void Every_cited_rule_is_enforced_by_a_named_test_a_gate_or_a_recorded_deviation()
     {
-        var testNames = AppDomain.CurrentDomain.GetAssemblies()
-            .SelectMany(SafeTypes).Select(t => t.Name).ToList();
+        var testNames = TestClassNames();
 
         var unenforced = PlanCitations()
             .Where(rule => !EnforcedWithoutATest.ContainsKey(rule))
@@ -132,11 +170,5 @@ public class Gate001RuleCoverageTests
         // Stops an exemption outliving the rule it exempts, which would hide a real gap.
         EnforcedWithoutATest.Keys.Except(ConstitutionRules()).OrderBy(x => x)
             .Should().BeEmpty("every exemption must correspond to a defined rule");
-    }
-
-    private static IEnumerable<Type> SafeTypes(Assembly assembly)
-    {
-        try { return assembly.GetTypes(); }
-        catch (ReflectionTypeLoadException ex) { return ex.Types.Where(t => t is not null)!; }
     }
 }
