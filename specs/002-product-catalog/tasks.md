@@ -427,3 +427,8 @@ a dead one — `depends_on: service_healthy`, restart policies and deploy gates 
 permanently false signal until it lands. T117 closes the gap GATE-001 names explicitly: a rule
 whose check does not run is unenforced, and `001-user-management/spec.md` already carries keywords
 nothing catches.
+
+### Close the class, not the instance
+
+- [ ] T120 CRITICAL Validate the enforcement map itself in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — every `scripts/…` or `docs/…` path a justification names MUST exist on disk and, for scripts, appear as a step in `.github/workflows/ci.yml`; every `…Tests` class name MUST resolve to a declared test class; every `BD-###` reference MUST still be open in `architecture-burndown.md`. The map is currently free text that nothing verifies, which is how `SPC-001` claimed a scan that was never written and `REL-006` kept citing a closed deviation per Constitution Governance / GATE-001 (missing)
+- [ ] T121 [P] Assert in the `backend-image` CI job that the built container reaches Docker health state `healthy`, not merely that it answers readiness — the current job would pass with a `HEALTHCHECK` that never succeeds, which is exactly the T116 defect per Constitution XI / DEP-001 (partial)
