@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Routing;
@@ -55,6 +56,9 @@ public class OpenApiContractConformanceTests(CatalogFixture fixture)
         return sources.Endpoints
             .OfType<RouteEndpoint>()
             .Select(e => "/" + e.RoutePattern.RawText!.TrimStart('/'))
+            // The document endpoint describes the API; it is not part of the API surface, so
+            // documenting it inside itself would be circular.
+            .Where(path => !path.Contains("openapi.json", StringComparison.Ordinal))
             .Select(Normalise)
             .ToHashSet(StringComparer.Ordinal);
     }
@@ -96,5 +100,33 @@ public class OpenApiContractConformanceTests(CatalogFixture fixture)
         var storefrontPaths = DocumentedPaths().Count(p => p.StartsWith("/catalog", StringComparison.Ordinal));
         Regex.Matches(contract, @"'429'").Count
             .Should().Be(storefrontPaths, "every storefront endpoint can refuse an over-limit caller");
+    }
+
+    [Fact]
+    public async Task The_published_document_declares_the_same_paths_as_the_checked_in_contract()
+    {
+        // UIX-002: the frontend generates its client from a published document. If that document
+        // and the checked-in contract disagree, the generated client is wrong and nothing else
+        // would notice — the hand-written file cannot drift from the server on its own.
+        var json = await fixture.CreateClient().GetStringAsync("/openapi.json");
+        using var published = JsonDocument.Parse(json);
+
+        var publishedPaths = published.RootElement.GetProperty("paths")
+            .EnumerateObject()
+            .Select(p => Normalise(p.Name))
+            .ToHashSet(StringComparer.Ordinal);
+
+        publishedPaths.Should().BeEquivalentTo(DocumentedPaths(),
+            "the published document and the checked-in contract must describe one API");
+    }
+
+    [Fact]
+    public async Task The_published_document_is_valid_openapi_with_a_version_and_paths()
+    {
+        var json = await fixture.CreateClient().GetStringAsync("/openapi.json");
+        using var document = JsonDocument.Parse(json);
+
+        document.RootElement.GetProperty("openapi").GetString().Should().StartWith("3.");
+        document.RootElement.GetProperty("paths").EnumerateObject().Should().NotBeEmpty();
     }
 }

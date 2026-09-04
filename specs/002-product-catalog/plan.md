@@ -163,7 +163,6 @@ Assessed against constitution v3.0.0. Every rule with a bearing on this feature:
 | COM-005 | PASS | `promotion.discount.changed.v1` is a past-tense fact, broadcast, with any number of consumers. No command is defined by this feature. |
 | COM-007 | PASS | The event name follows `<context>.<aggregate>.<past-tense-verb>.v<N>`. |
 | DAT-003 | PASS | The discount copy snapshots a Promotion fact at the time of the event and is never re-read from Promotion for a historical record. |
-| REL-006 | **OPEN** | No dead-letter queue is configured and no replay procedure is written. Recorded as `BD-003` in `architecture-burndown.md`. |
 | SEC-002..005 | N/A | No credential storage, authorization decision, or security-relevant event exists on an anonymous read path. Judgement recorded in `architecture-burndown.md`. |
 | TXN-004 | WITHDRAWN | Superseded by `TXN-006` in constitution v2.0.0. Cited here only to record that the withdrawal was noticed. |
 | GATE-001 | PASS | Rule identifiers are cited throughout this plan and will be cited in tasks. |

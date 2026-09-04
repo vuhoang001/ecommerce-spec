@@ -1,4 +1,32 @@
 services:
+  # DEP-001 — the deployable itself, built from the checked-in Dockerfile rather than run from
+  # the SDK on the host. `docker compose up` now brings up the whole system, not just its
+  # dependencies, so a fresh clone needs no .NET SDK to see the catalogue answer a request.
+  host:
+    build:
+      context: .
+      dockerfile: src/Host/ECommerce.Host/Dockerfile
+    ports: ["8080:8080"]
+    environment:
+      # Host=postgres, not localhost: inside the container localhost is the container itself.
+      ConnectionStrings__Catalog: "Host=postgres;Database=ecommerce;Username=ecommerce;Password=ecommerce"
+      # FR-035 — the per-caller budget is divided by this. Raise it in step with `--scale host=N`
+      # or each instance hands out the full budget and the aggregate limit is N times too loose.
+      RateLimit__InstanceCount: "1"
+      # UIX-001 — the frontend is a separate deployable and a browser treats it as cross-origin.
+      # Empty by default: CORS fails closed. Add the storefront origin when 003 exists, e.g.
+      #   Cors__AllowedOrigins__0: "http://localhost:5173"
+    depends_on:
+      # Wait for readiness, not just for the container to exist. The host applies migrations at
+      # startup (DEP-001), so a PostgreSQL that is still initialising means a crash loop.
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+    # Liveness comes from the Dockerfile HEALTHCHECK — deliberately not readiness, which
+    # excludes Promotion (research.md R13) and is the load balancer's concern, not the runtime's.
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -6,6 +34,12 @@ services:
       POSTGRES_USER: ecommerce
       POSTGRES_PASSWORD: ecommerce
     ports: ["5432:5432"]
+    # A NAMED volume. With an anonymous one, a leftover data directory from an earlier run makes
+    # PostgreSQL skip initialisation entirely -- POSTGRES_USER is never applied and every
+    # connection fails with `role "ecommerce" does not exist`, an error that points nowhere near
+    # the cause. Named, it is inspectable and removable: `docker compose down -v`.
+    volumes:
+      - catalog-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ecommerce"]
       interval: 5s
@@ -18,3 +52,6 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       retries: 10
+
+volumes:
+  catalog-postgres-data:
