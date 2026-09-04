@@ -1,9 +1,9 @@
 # Quickstart Validation Results
 
-**Run**: 2026-09-04 | **Feature**: [002-product-catalog](../specs/002-product-catalog/quickstart.md)
+**Run**: 2026-09-04 (refreshed after the Phase 8-10 convergence work) | **Feature**: [002-product-catalog](../specs/002-product-catalog/quickstart.md)
 
 Every scenario in `quickstart.md` mapped to the test that proves it. All test projects green:
-**159 passed, 0 failed**.
+**181 passed, 0 failed**.
 
 | Scenario | Covered by | Result |
 |---|---|---|
@@ -14,21 +14,21 @@ Every scenario in `quickstart.md` mapped to the test that proves it. All test pr
 | 5. Promotion degradation (FR-012, FR-013, FR-015, SC-008) | `PromotionRejectionTests`, `PromotionUnavailableTests`, `ProjectionStalenessTests` | ✅ |
 | 6. Projection consumer (REL-003, REL-004, REL-005) | `InboxDeduplicationTests`, `OutOfOrderDeliveryTests`, `TolerantReaderTests`, `EnvelopeValidationTests` | ✅ |
 | 7. Rate limiting (FR-035, FR-037, SC-014) | `RateLimitTests` | ✅ |
-| 8. Availability and recovery (FR-036, SC-015, SC-016) | `HealthProbeTests`, `ProjectionSeedTests` | ⚠️ **partial** |
+| 8. Availability and recovery (FR-036, SC-015, SC-016) | `HealthProbeTests`, `ProjectionSeedTests`, the `backend-image` CI job | ⚠️ **partial** |
 | 9. Money (TXN-006, FR-030, SC-012) | `MoneyTests`, `Mon001IntegerMoneyTests`, `MoneyRoundTripTests` | ✅ |
 
 ## Test projects
 
 | Project | Tests |
 |---|---|
-| `ECommerce.Catalog.IntegrationTests` | 64 |
-| `ECommerce.Shared.Messaging.Tests` | 21 |
+| `ECommerce.Catalog.IntegrationTests` | 73 |
+| `ECommerce.Shared.Messaging.Tests` | 22 |
 | `ECommerce.Catalog.UnitTests` | 22 |
-| `ECommerce.ArchitectureTests` | 17 |
+| `ECommerce.ArchitectureTests` | 29 |
 | `ECommerce.Catalog.ContractTests` | 16 |
 | `ECommerce.Shared.Kernel.Tests` | 10 |
 | `ECommerce.Catalog.ResilienceTests` | 9 |
-| **Total** | **159** |
+| **Total** | **181** |
 
 ## Not verified
 

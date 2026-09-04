@@ -224,8 +224,13 @@ tests/
 
 docs/
 ├── context-map.md                             # module boundaries and event ownership (not a constitution rule — a plan-level statement)
+├── quickstart-results.md                      # the recorded quickstart run (T103)
 ├── reviews/port-review-checklist.md           # COM-002 call depth, COM-003 transaction isolation
-└── runbooks/catalog-recovery-drill.md         # SC-016 recovery evidence
+└── runbooks/
+    ├── catalog-messaging-replay.md            # REL-006 dead-letter and replay procedure
+    └── catalog-recovery-drill.md              # SC-016 recovery evidence
+
+architecture-burndown.md                       # ARC-005 known deviations, with closing conditions
 ```
 
 **Structure Decision**: One solution, one host image run as two or more identical instances. `docs/`

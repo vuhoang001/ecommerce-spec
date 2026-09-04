@@ -33,11 +33,15 @@ COPY src/ src/
 RUN dotnet publish src/Host/ECommerce.Host/ECommerce.Host.csproj \
         -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# Alpine, specifically: the Debian-based aspnet:8.0 image contains neither wget nor curl, so the
+# HEALTHCHECK below could never succeed. The container reported `unhealthy` while serving 200s,
+# and anything reading Docker health -- depends_on: service_healthy, restart policies, deploy
+# gates -- was acting on a permanently false signal. Alpine's busybox provides wget.
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
 WORKDIR /app
 
-# Never run as root.
-RUN adduser --system --group --no-create-home catalog
+# Never run as root. busybox adduser takes different flags from the Debian one.
+RUN addgroup -S catalog && adduser -S -G catalog catalog
 USER catalog
 
 COPY --from=build /app/publish .
@@ -47,7 +51,10 @@ ENV ASPNETCORE_HTTP_PORTS=8080
 
 # FR-036 / research.md R13 — liveness only. Readiness is the load balancer's concern and
 # deliberately excludes the Promotion module, so it must not gate the container's own health.
-HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
-    CMD ["/bin/sh", "-c", "wget -qO- http://localhost:8080/health/live || exit 1"]
+# Liveness only. Readiness is the load balancer's concern and deliberately excludes the
+# Promotion module (research.md R13); gating the container's own health on it would restart a
+# perfectly healthy process during a Promotion outage.
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=3 \
+    CMD wget --quiet --spider --tries=1 http://localhost:8080/health/live || exit 1
 
 ENTRYPOINT ["dotnet", "ECommerce.Host.dll"]

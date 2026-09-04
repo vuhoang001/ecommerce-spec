@@ -36,7 +36,7 @@ public class Gate001RuleCoverageTests
         ["REL-003"] = "InboxDeduplicationTests",
         ["REL-004"] = "OutOfOrderDeliveryTests",
         ["REL-005"] = "TolerantReaderTests",
-        ["REL-006"] = "architecture-burndown.md BD-003 — open deviation",
+        ["REL-006"] = "docs/runbooks/catalog-messaging-replay.md; redelivery and retry are configured explicitly in MessagingSetup. Alerting on the dead-letter queue remains open and is recorded in architecture-burndown.md.",
         ["REL-007"] = "HealthProbeTests, PromotionUnavailableTests",
         ["TXN-001"] = "Txn001OneAggregatePerTransactionTests",
         ["TXN-005"] = "N/A — no order exists in this feature",
@@ -58,10 +58,9 @@ public class Gate001RuleCoverageTests
                       "(architecture-burndown.md)",
         ["SEC-006"] = "PriceRangeValidator, EnvelopeValidator, route constraints",
         ["OBS-001"] = "ProductPriceResolver logging; PromotionRejectionTests",
-        ["SPC-001"] = "spec.md keyword scan",
+        ["SPC-001"] = "scripts/check-spec-keywords.sh",
         ["STK-001"] = "scripts/check-approved-packages.sh",
         ["GATE-001"] = "this test",
-        ["GATE-001"] = "review process; identifiers cited throughout plan.md",
         ["ARC-005"] = "architecture-burndown.md",
         ["TXN-002"] = "N/A — no cross-module workflow exists in this feature",
         ["TXN-003"] = "N/A — no saga exists, so there is no compensation branch to test",
@@ -146,11 +145,19 @@ public class Gate001RuleCoverageTests
             if (file.Contains($"{sep}obj{sep}") || file.Contains($"{sep}bin{sep}")) continue;
 
             foreach (Match declaration in Regex.Matches(
-                         File.ReadAllText(file), @"class\s+([A-Za-z_][A-Za-z0-9_]*)"))
+                         File.ReadAllText(file), @"\bclass\s+([A-Za-z_][A-Za-z0-9_]*)"))
             {
                 names.Add(declaration.Groups[1].Value);
             }
         }
+
+        // A silently empty scan is how this check came to pass while doing nothing: the pattern
+        // held a stray control character, matched no declaration, and every caller compared
+        // against an empty set. Fail loudly instead.
+        if (names.Count == 0)
+            throw new InvalidOperationException(
+                $"No class declarations found under '{testRoot}'. The scan is broken, and every " +
+                "check built on it would pass vacuously.");
 
         return names;
     }
@@ -177,5 +184,96 @@ public class Gate001RuleCoverageTests
         // Stops an exemption outliving the rule it exempts, which would hide a real gap.
         EnforcedWithoutATest.Keys.Except(ConstitutionRules()).OrderBy(x => x)
             .Should().BeEmpty("every exemption must correspond to a defined rule");
+    }
+
+    [Fact]
+    public void Every_script_the_map_names_exists_and_runs_in_ci()
+    {
+        // The map was free text that nothing verified. That is how SPC-001 came to claim a scan
+        // nobody had written: the justification read plausibly and no test could tell. A named
+        // script that does not exist, or exists but never runs, is not an enforcement mechanism.
+        var workflow = Read(".github", "workflows", "ci.yml");
+        var problems = new List<string>();
+
+        foreach (var (rule, justification) in EnforcedWithoutATest)
+        {
+            foreach (Match reference in Regex.Matches(justification, @"scripts/[A-Za-z0-9._-]+\.sh"))
+            {
+                var script = reference.Value;
+
+                if (!File.Exists(Path.Combine(RepoRoot(), script)))
+                    problems.Add($"{rule} names {script}, which does not exist");
+                else if (!workflow.Contains(script, StringComparison.Ordinal))
+                    problems.Add($"{rule} names {script}, which is not a step in ci.yml");
+            }
+        }
+
+        problems.Should().BeEmpty("a rule enforced by a script that does not run is unenforced");
+    }
+
+    [Fact]
+    public void Every_document_the_map_names_exists()
+    {
+        var problems = new List<string>();
+
+        foreach (var (rule, justification) in EnforcedWithoutATest)
+        {
+            foreach (Match reference in Regex.Matches(justification, @"docs/[A-Za-z0-9._/-]+\.md"))
+            {
+                if (!File.Exists(Path.Combine(RepoRoot(), reference.Value)))
+                    problems.Add($"{rule} names {reference.Value}, which does not exist");
+            }
+        }
+
+        problems.Should().BeEmpty("a rule enforced by a document nobody wrote is unenforced");
+    }
+
+    [Fact]
+    public void Every_test_class_the_map_names_actually_exists()
+    {
+        var declared = TestClassNames();
+        var problems = new List<string>();
+
+        foreach (var (rule, justification) in EnforcedWithoutATest)
+        {
+            foreach (Match reference in Regex.Matches(justification, @"\b([A-Z][A-Za-z0-9]*Tests)\b"))
+            {
+                if (!declared.Contains(reference.Groups[1].Value))
+                    problems.Add($"{rule} names {reference.Groups[1].Value}, which is not a test class");
+            }
+        }
+
+        problems.Should().BeEmpty(
+            "a renamed or deleted test leaves the map asserting a check that is gone. " +
+            $"Scanned {declared.Count} declared class name(s) under " +
+            $"'{Path.Combine(RepoRoot(), "tests")}' " +
+            $"(exists: {Directory.Exists(Path.Combine(RepoRoot(), "tests"))}, " +
+            $"files: {(Directory.Exists(Path.Combine(RepoRoot(), "tests")) ? Directory.EnumerateFiles(Path.Combine(RepoRoot(), "tests"), "*.cs", SearchOption.AllDirectories).Count() : -1)}); " +
+            $"a sample: {string.Join(", ", declared.OrderBy(n => n).Take(6))}");
+    }
+
+    [Fact]
+    public void Every_burndown_reference_the_map_makes_is_still_open()
+    {
+        // A justification pointing at a CLOSED deviation is stale in the most misleading way: it
+        // reads as "tracked elsewhere" while the elsewhere has already been resolved, so nobody
+        // looks again. REL-006 cited BD-003 for exactly as long as BD-003 was closed.
+        var burndown = Read("architecture-burndown.md");
+        var openSection = burndown[..(burndown.IndexOf("## Closed", StringComparison.Ordinal) is var i && i > 0
+            ? i
+            : burndown.Length)];
+
+        var problems = new List<string>();
+
+        foreach (var (rule, justification) in EnforcedWithoutATest)
+        {
+            foreach (Match reference in Regex.Matches(justification, @"\bBD-\d{3}\b"))
+            {
+                if (!openSection.Contains(reference.Value, StringComparison.Ordinal))
+                    problems.Add($"{rule} cites {reference.Value}, which is not an open deviation");
+            }
+        }
+
+        problems.Should().BeEmpty("citing a closed deviation hides a gap behind a resolved reference");
     }
 }
