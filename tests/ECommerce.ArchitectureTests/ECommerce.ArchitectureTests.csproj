@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Host\ECommerce.Host\ECommerce.Host.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\ECommerce.Catalog.Domain\ECommerce.Catalog.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\ECommerce.Catalog.Application\ECommerce.Catalog.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\ECommerce.Catalog.Infrastructure\ECommerce.Catalog.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Shared\ECommerce.Shared.Messaging\ECommerce.Shared.Messaging.csproj" />
+    <ProjectReference Include="..\..\src\Shared\ECommerce.Shared.Kernel\ECommerce.Shared.Kernel.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Catalog\ECommerce.Catalog.Contracts\ECommerce.Catalog.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Promotion\ECommerce.Promotion.Contracts\ECommerce.Promotion.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="FluentAssertions" />
+  </ItemGroup>
+
+</Project>

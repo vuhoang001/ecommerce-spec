@@ -1,0 +1,39 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+*.suo
+*.userprefs
+
+# NuGet
+packages/
+*.nupkg
+.nuget/
+
+# Test output
+TestResults/
+coverage/
+*.trx
+*.coverage
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editors
+.vs/
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+
+# Logs
+*.log

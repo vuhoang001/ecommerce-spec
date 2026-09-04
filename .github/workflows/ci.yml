@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore ECommerce.sln
+
+      - name: Build
+        run: dotnet build ECommerce.sln --no-restore -c Release
+
+      # GATE-002 — DAT-002: no foreign key crosses a schema boundary
+      - name: Cross-schema foreign key scan
+        run: ./scripts/check-migrations.sh src
+
+      # GATE-003 — MSG-003: a breaking event schema change ships as a new version, and the
+      # previous version keeps being published until every consumer has migrated.
+      - name: Event schema compatibility
+        run: ./scripts/check-schema-compatibility.sh origin/main
+
+      # GATE-001 — every named check runs and blocks the merge
+      - name: Test
+        run: dotnet test ECommerce.sln --no-build -c Release --logger "trx;LogFileName=test.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: "**/TestResults/*.trx"
