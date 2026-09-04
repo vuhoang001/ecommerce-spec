@@ -376,3 +376,54 @@ Task: "Create ProductImage in src/Modules/Catalog/ECommerce.Catalog.Domain/Produ
 Phase 7's outbox tasks (T093-T096) are the only ones guarding no production traffic — Catalog
 publishes nothing in this feature. Cutting them is the plan's own recorded recommendation. Nothing
 else in this list is optional: every other task traces to a requirement or a constitution rule.
+
+---
+
+## Phase 8: Convergence
+
+Appended by `/speckit-converge`. Each task traces to the artifact that requires it and the kind
+of gap found. Nothing above this line was renumbered, reordered, or altered.
+
+### Constitution violations (CRITICAL — resolve first)
+
+- [X] T108 CRITICAL Configure an explicit dead-letter queue for every consumed queue and write the replay procedure in `docs/runbooks/catalog-messaging-replay.md`, then correct the claim in `src/Shared/ECommerce.Shared.Messaging/MessagingSetup.cs` that the procedure already exists per Constitution IV / REL-006 (missing)
+- [X] T109 CRITICAL Apply pending migrations at start-up in `src/Host/ECommerce.Host/Program.cs`, guarded so concurrent instances cannot race, so a fresh database does not leave the container returning 503 and 500 until a CLI is run from outside the image per Constitution XI / DEP-001 (contradicts)
+
+### Functional gaps
+
+- [X] T110 Add a development seed script at `scripts/seed-dev-data.sh` that inserts the categories and products `quickstart.md` scenarios assume, so the documented run path can be followed by hand per quickstart.md (partial)
+- [X] T111 Add a configurable CORS policy in `src/Host/ECommerce.Host/Program.cs`, allowing the storefront origin from configuration and defaulting to none, so a separate-deployable frontend can call the catalogue per Constitution X / UIX-001, UIX-002 (missing)
+- [X] T112 [P] Add an integration test asserting the CORS policy allows the configured origin and rejects an unconfigured one in `tests/Catalog/ECommerce.Catalog.IntegrationTests/CorsPolicyTests.cs` per Constitution X / UIX-001 (missing)
+
+### Contract and environment
+
+- [X] T113 Emit the OpenAPI document from the host and add a CI step diffing it against `specs/002-product-catalog/contracts/catalog-storefront.openapi.yaml`, so a client can be generated from published server output rather than a hand-written file per Constitution X / UIX-002 (partial)
+- [X] T114 [P] Declare a named volume for PostgreSQL in `docker-compose.yml` so a stale anonymous volume cannot leave `POSTGRES_USER` unapplied and produce `role "ecommerce" does not exist` per quickstart.md prerequisites (partial)
+- [X] T115 [P] Remove the duplicated `REL-006` row from the Constitution Check table in `specs/002-product-catalog/plan.md` per plan.md Constitution Check (partial)
+
+**Checkpoint**: T108 and T109 close the two constitution violations. T110, T111 and T112 are the
+prerequisites a storefront feature depends on — without them a separate-origin frontend cannot
+call the catalogue and no documented scenario can be run by hand.
+
+---
+
+## Phase 9: Convergence
+
+Appended by `/speckit-converge`. Nothing above this line was renumbered, reordered, or altered.
+Phase 8's tasks are complete and left untouched.
+
+### Constitution violations (CRITICAL — resolve first)
+
+- [ ] T116 CRITICAL Make the container healthcheck executable — the runtime image `mcr.microsoft.com/dotnet/aspnet:8.0` contains neither `wget` nor `curl`, so the `HEALTHCHECK` in `src/Host/ECommerce.Host/Dockerfile` fails on every probe and the container reports `unhealthy` while serving 200s; switch the runtime stage to `mcr.microsoft.com/dotnet/aspnet:8.0-alpine`, whose busybox provides `wget`, and add a test or CI step asserting the built image reaches `healthy` per Constitution XI / DEP-001 (contradicts)
+- [ ] T117 CRITICAL Implement the SPC-001 keyword scan the enforcement map already claims exists — add `scripts/check-spec-keywords.sh` scanning every `specs/*/spec.md` for framework, library, database, protocol and pattern names, wire it into `.github/workflows/ci.yml` as a blocking step, and correct the `SPC-001` entry in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` to name the script per Constitution VIII / SPC-001 and Constitution Governance / GATE-001 (missing)
+
+### Enforcement-map accuracy
+
+- [ ] T118 [P] Correct the stale `REL-006` justification in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — it names BD-003 as an open deviation, but BD-003 is in the closed table of `architecture-burndown.md`; point it at the dead-letter configuration and `docs/runbooks/catalog-messaging-replay.md`, and reference the narrower open alerting gap instead per Constitution Governance / GATE-001 (partial)
+- [ ] T119 [P] Remove the duplicated `["GATE-001"]` key in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — collection-initialiser indexer syntax silently overwrites, so the second assignment wins and the recorded justification is not the one intended per Constitution Governance / GATE-001 (partial)
+
+**Checkpoint**: T116 restores the ability of any orchestrator to distinguish a live container from
+a dead one — `depends_on: service_healthy`, restart policies and deploy gates are all reading a
+permanently false signal until it lands. T117 closes the gap GATE-001 names explicitly: a rule
+whose check does not run is unenforced, and `001-user-management/spec.md` already carries keywords
+nothing catches.

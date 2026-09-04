@@ -1,0 +1,20 @@
+# Build output must never enter the image: DEP-001 forbids build steps performed outside it,
+# and copying a host-built bin/ is exactly that.
+**/bin/
+**/obj/
+**/TestResults/
+
+.git/
+.github/
+.specify/
+.claude/
+.config/
+
+tests/
+specs/
+docs/
+*.md
+
+docker-compose.yml
+.dockerignore
+.gitignore

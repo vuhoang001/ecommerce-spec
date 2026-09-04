@@ -49,6 +49,24 @@ swapped (research.md R5).
 proven before the first publisher, not because this feature emits anything (plan.md Complexity
 Tracking).
 
+## Deployables
+
+Constitution v2.2.0 makes container packaging the delivery mechanism for every deployable
+(`DEP-001`) and admits a frontend to the stack.
+
+| Deployable | Source | Image | Built by |
+|---|---|---|---|
+| Backend host | `src/Host/ECommerce.Host` | `src/Host/ECommerce.Host/Dockerfile` | the `backend-image` CI job |
+| Frontend | not built | — | — |
+
+`DEP-002` requires the two to be independently buildable. The backend job installs no .NET SDK
+and runs no `dotnet` command on the runner, so it demonstrates that the image builds itself from
+the backend source tree alone — it would still pass with the frontend absent, as it is today.
+
+The four modules above all live inside the **backend** deployable. Module extraction (`ARC-001`)
+and deployable separation (`DEP-002`) are different axes: extracting a module later means adding
+a deployable, not reorganising the frontend.
+
 ## Extraction readiness
 
 Every module is four assemblies — `Contracts`, `Domain`, `Application`, `Infrastructure` — so
