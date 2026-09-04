@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    research.md R5: the proto defines the CONTRACT. Transport today is an in-process adapter
+    over these generated message types, so only messages are generated (GrpcServices="None").
+    Generating the gRPC client is a one-line change here after extraction.
+    MOD-002: this assembly holds generated proto types and nothing else.
+  -->
+  <ItemGroup>
+    <Protobuf Include="Protos\promotion_pricing.proto" GrpcServices="None" />
+  </ItemGroup>
+
+</Project>

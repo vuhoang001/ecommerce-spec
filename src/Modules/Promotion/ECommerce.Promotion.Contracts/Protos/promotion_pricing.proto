@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package ecommerce.promotion.v1;
+
+option csharp_namespace = "ECommerce.Promotion.Contracts.V1";
+
+import "google/protobuf/timestamp.proto";
+
+// The read contract Catalog consumes. Owned by the Promotion module and published from
+// ECommerce.Promotion.Contracts. Catalog declares its own port over these types (COM-001);
+// nothing here writes to Promotion (PRM-001).
+service PromotionPricing {
+  // Current discount for one product. Used by the detail view (FR-010).
+  rpc GetPricing(GetPricingRequest) returns (PricingResult);
+
+  // Current discount for many products in one call. Keeps COM-002's call depth at 1 while a
+  // listing renders, instead of one call per row.
+  rpc GetPricingBatch(GetPricingBatchRequest) returns (GetPricingBatchResponse);
+
+  // Every currently active discount. Seeds and reconciles catalog.discount_projection
+  // (research.md R1). Paged, because the result set is unbounded in principle.
+  rpc ListActiveDiscounts(ListActiveDiscountsRequest) returns (ListActiveDiscountsResponse);
+}
+
+// Integer minor units only. No double appears anywhere in this contract (MON-001).
+message Money {
+  int64 amount_minor = 1;
+  string currency_code = 2;  // ISO 4217
+}
+
+message GetPricingRequest {
+  string product_id = 1;
+  Money original_price = 2;
+}
+
+message GetPricingBatchRequest {
+  repeated GetPricingRequest items = 1;
+}
+
+message GetPricingBatchResponse {
+  map<string, PricingResult> results_by_product_id = 1;
+}
+
+message ListActiveDiscountsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListActiveDiscountsResponse {
+  repeated AppliedDiscount discounts = 1;
+  string next_page_token = 2;
+}
+
+// PRM-003 in the type system: exactly one case is always set, so "no discount and no reason"
+// is unrepresentable rather than merely forbidden.
+message PricingResult {
+  oneof outcome {
+    AppliedDiscount applied = 1;
+    RejectedDiscount rejected = 2;
+    PricingUnavailable unavailable = 3;
+  }
+}
+
+message AppliedDiscount {
+  string product_id = 1;
+  string promotion_id = 2;
+  Money discounted_price = 3;
+  google.protobuf.Timestamp occurred_at = 4;  // ordering key for REL-004
+}
+
+// A promotion exists but does not apply. Catalog shows the undiscounted price and logs the
+// reason without showing it to the customer (FR-012, SC-009).
+message RejectedDiscount {
+  string product_id = 1;
+  string promotion_id = 2;
+  string reason_code = 3;   // e.g. EXPIRED, MINIMUM_ORDER_VALUE_NOT_MET, NOT_ELIGIBLE
+  string reason_detail = 4;
+}
+
+// Promotion could not answer. Catalog falls back to its projection (FR-013).
+message PricingUnavailable {
+  string product_id = 1;
+  string reason_code = 2;   // e.g. TIMEOUT, UNAVAILABLE
+}

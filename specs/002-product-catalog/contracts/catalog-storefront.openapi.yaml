@@ -1,0 +1,226 @@
+openapi: 3.1.0
+info:
+  title: Catalog Storefront Read API
+  version: 1.0.0
+  description: >
+    Customer-facing read path of the product catalogue. Read-only: no endpoint here creates,
+    updates, or deletes catalogue data, and none changes stock (spec Out of Scope).
+    Only Active products are ever returned (FR-001).
+    Every endpoint is anonymous — no authentication is required or accepted (FR-034).
+    Every endpoint is rate limited per caller and may answer 429 (FR-035).
+
+paths:
+  /catalog/categories/{categoryId}/products:
+    get:
+      summary: Browse the Active products of a category (US1)
+      parameters:
+        - { name: categoryId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 24 } }
+      responses:
+        '200':
+          description: A page of products. Empty with reason NO_PRODUCTS_IN_CATEGORY, never an error (FR-008).
+          content: { application/json: { schema: { $ref: '#/components/schemas/ProductPage' } } }
+        '404': { $ref: '#/components/responses/Problem' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /catalog/products/{productId}:
+    get:
+      summary: Product detail (US2)
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content: { application/json: { schema: { $ref: '#/components/schemas/ProductDetail' } } }
+        '404':
+          description: Not found. Returned identically for a non-existent and a non-Active product (FR-002).
+          $ref: '#/components/responses/Problem'
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /catalog/products/search:
+    get:
+      summary: Search by name, case- and diacritic-insensitive (US3, FR-017)
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 1 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 24 } }
+      responses:
+        '200':
+          content: { application/json: { schema: { $ref: '#/components/schemas/ProductPage' } } }
+        '400':
+          description: Empty or whitespace keyword — reason EMPTY_KEYWORD, never the whole catalogue (FR-019).
+          $ref: '#/components/responses/Problem'
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /catalog/products:
+    get:
+      summary: Filter by category and price range, combinable (US4, FR-021)
+      parameters:
+        - { name: categoryId, in: query, schema: { type: string, format: uuid } }
+        - { name: minPriceMinor, in: query, schema: { type: integer, format: int64, minimum: 0 } }
+        - { name: maxPriceMinor, in: query, schema: { type: integer, format: int64, minimum: 0 } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 24 } }
+      responses:
+        '200':
+          content: { application/json: { schema: { $ref: '#/components/schemas/ProductPage' } } }
+        '400':
+          description: >
+            Reason MIN_EXCEEDS_MAX when minPriceMinor > maxPriceMinor (FR-022), or NEGATIVE_PRICE_BOUND
+            (FR-025). Never answered with an empty list (FR-029).
+          $ref: '#/components/responses/Problem'
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /health/live:
+    get:
+      summary: Liveness — is the process responsive?
+      description: Used by the orchestrator to restart a wedged instance (FR-036).
+      responses:
+        '200': { description: Process is responsive. }
+        '503': { description: Process is not responsive and should be restarted. }
+
+  /health/ready:
+    get:
+      summary: Readiness — should the load balancer send traffic to this instance?
+      description: >
+        Reports whether the database is reachable and migrations are applied. It deliberately does
+        NOT check the Promotion feature: including it would mark every instance unready during a
+        Promotion outage and turn a degraded dependency into a catalogue outage, which is exactly
+        what SC-008 forbids (research.md R13).
+      responses:
+        '200': { description: Instance can serve reads. Promotion may still be unreachable. }
+        '503': { description: Database unreachable or migrations pending. Remove from rotation. }
+
+components:
+  responses:
+    RateLimited:
+      description: >
+        Caller exceeded its rate limit. Carries the reason and when to retry, never a silently empty
+        or truncated result (FR-035, SC-014).
+      headers:
+        Retry-After:
+          required: true
+          description: Seconds until the caller may retry.
+          schema: { type: integer, minimum: 1 }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+    Problem:
+      description: Every rejection carries a reason code the caller can act on (FR-029).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    Problem:
+      type: object
+      required: [title, status, reasonCode]
+      properties:
+        title: { type: string }
+        status: { type: integer }
+        reasonCode:
+          type: string
+          enum:
+            - MIN_EXCEEDS_MAX
+            - NEGATIVE_PRICE_BOUND
+            - EMPTY_KEYWORD
+            - PRODUCT_NOT_FOUND
+            - CATEGORY_NOT_FOUND
+            - RATE_LIMIT_EXCEEDED
+        detail: { type: string }
+        retryAfterSeconds:
+          type: integer
+          minimum: 1
+          description: Present only with RATE_LIMIT_EXCEEDED; mirrors the Retry-After header (FR-035).
+
+    Money:
+      type: object
+      required: [amountMinor, currencyCode]
+      properties:
+        amountMinor:
+          type: integer
+          format: int64
+          description: >
+            Whole dong. The catalogue is single-currency, so this is never fractional and never
+            converted (FR-032, FR-033).
+        currencyCode:
+          type: string
+          enum: [VND]
+          description: Always VND. The field is retained so a future multi-currency spec is additive.
+
+    PriceDisplay:
+      type: object
+      required: [current, isOutOfDate]
+      properties:
+        current: { $ref: '#/components/schemas/Money' }
+        original:
+          allOf: [{ $ref: '#/components/schemas/Money' }]
+          description: Present only when a discount applies; shown struck through (FR-010).
+        isOutOfDate:
+          type: boolean
+          description: >
+            True when the price came from the projection because Promotion was unreachable, or when
+            no result is held and the undiscounted price is shown as possibly stale (FR-013, FR-015).
+
+    ProductSummary:
+      type: object
+      required: [id, name, price, isOutOfStock]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        primaryImageUrl: { type: string, nullable: true }
+        price: { $ref: '#/components/schemas/PriceDisplay' }
+        isOutOfStock:
+          type: boolean
+          description: Stock is zero. The product stays listed and openable (FR-005).
+        matchedOnDiscountedPriceOnly:
+          type: boolean
+          description: Set on filter results the discounted price alone brought in (FR-028).
+
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProductSummary'
+        - type: object
+          required: [stockQuantity, categories, images]
+          properties:
+            description: { type: string, nullable: true }
+            stockQuantity: { type: integer, minimum: 0 }
+            categories:
+              type: array
+              items: { $ref: '#/components/schemas/CategoryRef' }
+            images:
+              type: array
+              description: May be empty; the view renders without a gallery (spec Edge Cases).
+              items:
+                type: object
+                required: [url, position]
+                properties:
+                  url: { type: string }
+                  position: { type: integer }
+
+    CategoryRef:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        slug: { type: string }
+
+    ProductPage:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/ProductSummary' }
+        page: { type: integer }
+        pageSize: { type: integer }
+        totalCount:
+          type: integer
+          description: Total matching products; with page, this satisfies FR-007.
+        emptyReason:
+          type: string
+          nullable: true
+          enum: [NO_PRODUCTS_IN_CATEGORY, NO_MATCHES, PAGE_BEYOND_LAST]
+          description: Why an empty page is empty. An empty result always states its reason (FR-008).

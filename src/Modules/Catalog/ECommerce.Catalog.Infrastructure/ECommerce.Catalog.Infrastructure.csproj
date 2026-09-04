@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ECommerce.Catalog.Application\ECommerce.Catalog.Application.csproj" />
+    <ProjectReference Include="..\..\..\Shared\ECommerce.Shared.Messaging\ECommerce.Shared.Messaging.csproj" />
+    <ProjectReference Include="..\..\Promotion\ECommerce.Promotion.Contracts\ECommerce.Promotion.Contracts.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+    <PackageReference Include="MassTransit" />
+  </ItemGroup>
+
+</Project>
