@@ -420,7 +420,7 @@ Phase 8's tasks are complete and left untouched.
 ### Enforcement-map accuracy
 
 - [X] T118 [P] Correct the stale `REL-006` justification in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — it names BD-003 as an open deviation, but BD-003 is in the closed table of `architecture-burndown.md`; point it at the dead-letter configuration and `docs/runbooks/catalog-messaging-replay.md`, and reference the narrower open alerting gap instead per Constitution Governance / GATE-001 (partial)
-- [X] T119 [P] Remove the duplicated `["GATE-001"]` key in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — collection-initialiser indexer syntax silently overwrites, so the second assignment wins and the recorded justification is not the one intended per Constitution Governance / GATE-001 (partial)
+- [X] T119 Remove the duplicated `["GATE-001"]` key in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — collection-initialiser indexer syntax silently overwrites, so the second assignment wins and the recorded justification is not the one intended per Constitution Governance / GATE-001 (partial; sequential after T118 — same file)
 
 **Checkpoint**: T116 restores the ability of any orchestrator to distinguish a live container from
 a dead one — `depends_on: service_healthy`, restart policies and deploy gates are all reading a
