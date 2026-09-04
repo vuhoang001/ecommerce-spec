@@ -130,6 +130,18 @@ Assessed against constitution v3.0.0. Every rule with a bearing on this feature:
 | QAG-003 | PASS | Domain tests reference no infrastructure package. |
 | QAG-006 | PASS | Every infrastructure suite runs against real PostgreSQL in Testcontainers, never a fake. |
 | STK-001 | PASS | `scripts/check-approved-packages.sh` maps every `PackageVersion` to an approved component. The stack was amended to 2.1.0 to name gRPC, Serilog and health checks, which this feature already required. |
+| DEP-001 | PASS | `src/Host/ECommerce.Host/Dockerfile` builds the deployable inside the image — restore and publish happen in the build stage, never on the runner. Enforced by `scripts/check-deployable-images.sh` and the `backend-image` CI job. |
+| DEP-002 | PASS | The `backend-image` job installs no .NET SDK and runs no `dotnet` command on the runner, so a green result proves the image builds from the backend source tree alone, without the frontend's toolchain. |
+| UIX-001 | N/A | No frontend exists in this repository. The rule binds the frontend feature. |
+| UIX-002 | PASS, partial | The OpenAPI contract is checked in and `OpenApiContractConformanceTests` fails if a documented path is unroutable or a route is undocumented. The host does not yet *emit* the document, so a generated client is validated against the contract rather than against generated output. |
+| UIX-003 | PASS, enabling | Every monetary value crosses the wire as `amountMinor` (integer) plus a currency code, never a decimal — which is what makes client-side rendering without arithmetic possible. JavaScript's single float numeric type is why `TXN-006`'s guarantee would otherwise be lost at this boundary. |
+| UIX-004, UIX-005 | N/A | Keyboard operability and the component library bind the frontend feature. |
+| COM-005 | PASS | `promotion.discount.changed.v1` is a past-tense fact, broadcast, with any number of consumers. No command is defined by this feature. |
+| COM-007 | PASS | The event name follows `<context>.<aggregate>.<past-tense-verb>.v<N>`. |
+| DAT-003 | PASS | The discount copy snapshots a Promotion fact at the time of the event and is never re-read from Promotion for a historical record. |
+| REL-006 | **OPEN** | No dead-letter queue is configured and no replay procedure is written. Recorded as `BD-003` in `architecture-burndown.md`. |
+| SEC-002..005 | N/A | No credential storage, authorization decision, or security-relevant event exists on an anonymous read path. Judgement recorded in `architecture-burndown.md`. |
+| TXN-004 | WITHDRAWN | Superseded by `TXN-006` in constitution v2.0.0. Cited here only to record that the withdrawal was noticed. |
 | GATE-001 | PASS | Architecture suite, migration scanner, and contract tests all run in CI and block the merge. |
 | DAT-004 | PASS | All four read paths execute through Dapper; no `*Query` takes a `DbContext`. Enforced by `Dat004ReadWriteSeparationTests`. |
 | DAT-005 | PASS | Read visibility comes from the shared `CatalogVisibility` fragment. Enforced by `Dat005VisibilityFragmentTests`, which also forbids a hand-written clause at any call site. |
@@ -142,6 +154,18 @@ Assessed against constitution v3.0.0. Every rule with a bearing on this feature:
 | QAG-003 | PASS | Domain tests reference no infrastructure package. |
 | QAG-006 | PASS | Every infrastructure suite runs against real PostgreSQL in Testcontainers, never a fake. |
 | STK-001 | PASS | `scripts/check-approved-packages.sh` maps every `PackageVersion` to an approved component. The stack was amended to 2.1.0 to name gRPC, Serilog and health checks, which this feature already required. |
+| DEP-001 | PASS | `src/Host/ECommerce.Host/Dockerfile` builds the deployable inside the image — restore and publish happen in the build stage, never on the runner. Enforced by `scripts/check-deployable-images.sh` and the `backend-image` CI job. |
+| DEP-002 | PASS | The `backend-image` job installs no .NET SDK and runs no `dotnet` command on the runner, so a green result proves the image builds from the backend source tree alone, without the frontend's toolchain. |
+| UIX-001 | N/A | No frontend exists in this repository. The rule binds the frontend feature. |
+| UIX-002 | PASS, partial | The OpenAPI contract is checked in and `OpenApiContractConformanceTests` fails if a documented path is unroutable or a route is undocumented. The host does not yet *emit* the document, so a generated client is validated against the contract rather than against generated output. |
+| UIX-003 | PASS, enabling | Every monetary value crosses the wire as `amountMinor` (integer) plus a currency code, never a decimal — which is what makes client-side rendering without arithmetic possible. JavaScript's single float numeric type is why `TXN-006`'s guarantee would otherwise be lost at this boundary. |
+| UIX-004, UIX-005 | N/A | Keyboard operability and the component library bind the frontend feature. |
+| COM-005 | PASS | `promotion.discount.changed.v1` is a past-tense fact, broadcast, with any number of consumers. No command is defined by this feature. |
+| COM-007 | PASS | The event name follows `<context>.<aggregate>.<past-tense-verb>.v<N>`. |
+| DAT-003 | PASS | The discount copy snapshots a Promotion fact at the time of the event and is never re-read from Promotion for a historical record. |
+| REL-006 | **OPEN** | No dead-letter queue is configured and no replay procedure is written. Recorded as `BD-003` in `architecture-burndown.md`. |
+| SEC-002..005 | N/A | No credential storage, authorization decision, or security-relevant event exists on an anonymous read path. Judgement recorded in `architecture-burndown.md`. |
+| TXN-004 | WITHDRAWN | Superseded by `TXN-006` in constitution v2.0.0. Cited here only to record that the withdrawal was noticed. |
 | GATE-001 | PASS | Rule identifiers are cited throughout this plan and will be cited in tasks. |
 | GOV-007 [withdrawn citation] | N/A | This feature touches no file in the promotion module beyond its `.Contracts` proto. |
 

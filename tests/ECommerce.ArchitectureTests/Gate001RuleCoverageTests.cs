@@ -91,9 +91,13 @@ public class Gate001RuleCoverageTests
     private static HashSet<string> ConstitutionRules()
     {
         var text = Read(".specify", "memory", "constitution.md");
-        // Only rules the document actually DEFINES, i.e. "- **XXX-000**: ..."
-        return Regex.Matches(text, @"^\- \*\*([A-Z]{3,4}-\d{3})\*\*", RegexOptions.Multiline)
-            .Select(m => m.Groups[1].Value).ToHashSet();
+        // Only rules the document actually DEFINES, i.e. "- **XXX-000**: ...".
+        // A WITHDRAWN rule keeps its identifier in place by design, but it is no longer a rule
+        // to assess — counting it would make the unassessed tally permanently wrong.
+        return Regex.Matches(text, @"^\- \*\*([A-Z]{3,4}-\d{3})\*\*(.*)$", RegexOptions.Multiline)
+            .Where(m => !m.Groups[2].Value.Contains("WITHDRAWN", StringComparison.Ordinal))
+            .Select(m => m.Groups[1].Value)
+            .ToHashSet();
     }
 
     private static HashSet<string> PlanCitations()
@@ -101,10 +105,13 @@ public class Gate001RuleCoverageTests
         var plan = Read("specs", "002-product-catalog", "plan.md");
         return RuleId.Matches(plan)
             .Select(m => m.Value)
-            // Citations explicitly marked as retired are documentation, not claims.
+            // Citations explicitly marked as retired are documentation, not compliance claims.
+            // A row reading "| TXN-004 | WITHDRAWN |" records that the withdrawal was noticed;
+            // it does not assert conformance with a rule that no longer binds anything.
             .Where(id => !plan.Contains($"{id} [not adopted", StringComparison.Ordinal)
                          && !plan.Contains($"{id} [not a rule", StringComparison.Ordinal)
-                         && !plan.Contains($"{id} [withdrawn citation]", StringComparison.Ordinal))
+                         && !plan.Contains($"{id} [withdrawn citation]", StringComparison.Ordinal)
+                         && !Regex.IsMatch(plan, $@"\|\s*{Regex.Escape(id)}\s*\|\s*WITHDRAWN"))
             .ToHashSet();
     }
 

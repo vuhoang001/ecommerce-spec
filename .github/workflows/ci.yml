@@ -32,6 +32,10 @@ jobs:
       - name: Event schema compatibility
         run: ./scripts/check-schema-compatibility.sh origin/main
 
+      # DEP-001 — every deployable has a Dockerfile that builds itself
+      - name: Deployable image check
+        run: ./scripts/check-deployable-images.sh src
+
       # STK-001 — the Technology Constraints stack is closed
       - name: Approved package check
         run: ./scripts/check-approved-packages.sh
@@ -50,3 +54,41 @@ jobs:
         with:
           name: test-results
           path: "**/TestResults/*.trx"
+
+  # DEP-002 — the backend image MUST be independently buildable: this job is given the source
+  # tree and nothing else. It installs no .NET SDK and runs no dotnet command on the runner, so
+  # a green result proves the image builds itself (DEP-001) without the other deployable's
+  # toolchain (DEP-002).
+  backend-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build the backend image in isolation
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: src/Host/ECommerce.Host/Dockerfile
+          push: false
+          load: true
+          tags: ecommerce-host:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: The image starts and reports liveness
+        run: |
+          docker run -d --name catalog -p 8080:8080 ecommerce-host:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/health/live >/dev/null 2>&1; then
+              echo "liveness OK"
+              docker rm -f catalog
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "the image did not report liveness within 60s"
+          docker logs catalog
+          docker rm -f catalog
+          exit 1
