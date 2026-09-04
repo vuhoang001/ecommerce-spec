@@ -3,7 +3,7 @@
 **Feature**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md) | **Date**: 2026-09-04
 
 Every table below lives in the `catalog` schema, owned by `CatalogDbContext` alone (DAT-001). No
-foreign key leaves the schema (DAT-002). Monetary columns are `bigint` minor units (MON-001).
+foreign key leaves the schema (DAT-002). Monetary columns are `bigint` minor units (TXN-006).
 
 ---
 
@@ -25,7 +25,7 @@ The purchasable item. Aggregate root for this module.
 | `status` | `text` | `Draft` \| `Active` \| `Hidden` \| `Discontinued` |
 | `created_at` | `timestamptz` | Drives the default newest-first ordering |
 
-**Invariants** (unit-tested per TST-002):
+**Invariants** (unit-tested per QAG-002, QAG-004, QAG-005):
 - `price_minor >= 0` — a negative price is unrepresentable.
 - `stock_quantity >= 0`.
 - `name` is non-empty after trimming.
@@ -101,7 +101,7 @@ because FR-026 must filter on a price Promotion owns. Non-authoritative by const
   price filter — the product then matches on its original price alone (FR-027).
 - The consumer applies an update only when the incoming `occurred_at` is newer than the stored one,
   which is what makes it safe under unordered delivery (REL-004).
-- Never written by Promotion, never read by any other module (DAT-001, PRM-001).
+- Never written by Promotion, never read by any other module (DAT-001, PRM-001 [withdrawn citation]).
 
 **Index**: `(discounted_price_minor)` filtered to non-expired rows, for FR-026.
 

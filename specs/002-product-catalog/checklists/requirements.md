@@ -59,10 +59,10 @@ All findings from both `/speckit-analyze` passes are resolved. Notable spec chan
 
 - **SPC-001** — spec.md names no framework, database, library, or technical pattern. Verified by
   keyword scan; the only technology-adjacent nouns are the names of sibling features.
-- **PRM-001** — FR-011 states Catalog never calculates a discount and never writes to Promotion.
+- **PRM-001 [not adopted — see architecture-burndown.md BD-005]** — FR-011 states Catalog never calculates a discount and never writes to Promotion.
   FR-014's discount copy is Catalog's own data, read from Promotion and never written back, so the
   rule holds. It does give Catalog derived promotion state it would not otherwise carry.
-- **PRM-003** — FR-024 and SC-005 forbid answering a rejection with a silently empty result.
-- **MON-001** — FR-025 requires exact monetary amounts with no rounding drift.
+- **PRM-003 [not adopted — see architecture-burndown.md BD-005]** — FR-024 and SC-005 forbid answering a rejection with a silently empty result.
+- **TXN-006** — FR-025 requires exact monetary amounts with no rounding drift.
 - **COM-001** — recorded in Assumptions: Catalog reads discount results through an interface it
   owns. The interface itself is a `plan.md` concern, not stated here.

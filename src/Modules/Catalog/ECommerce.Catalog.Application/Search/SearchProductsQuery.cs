@@ -1,20 +1,19 @@
+using Dapper;
 using ECommerce.Catalog.Application.Contracts;
-using ECommerce.Catalog.Domain;
+using ECommerce.Catalog.Application.Reads;
 using ECommerce.Shared.Kernel.Primitives;
-using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Catalog.Application.Search;
 
 /// <summary>
-/// US3 — FR-017, FR-018, FR-019, FR-020: partial name match, ignoring letter case and
-/// diacritics in both directions.
+/// FR-017..FR-020 — partial name match, ignoring letter case and diacritics in both directions.
 /// </summary>
 /// <remarks>
-/// research.md R3: the stored name and the keyword pass through the same
-/// <c>lower(immutable_unaccent(...))</c> normalisation, which is what makes the match work in
-/// both directions from one GIN trigram index.
+/// research.md R3: the stored name is normalised into a generated column and the keyword through
+/// the same SQL function, so the match works in both directions from one GIN trigram index.
+/// DAT-004 Dapper, DAT-005 shared visibility fragment, DAT-006 catalog schema only.
 /// </remarks>
-public sealed class SearchProductsQuery(DbContext db)
+public sealed class SearchProductsQuery(ICatalogReadConnection connections)
 {
     public async Task<Result<ProductPageDto>> ExecuteAsync(
         string? keyword, int? page, int? pageSize, CancellationToken ct = default)
@@ -25,56 +24,42 @@ public sealed class SearchProductsQuery(DbContext db)
                 "A search keyword is required; an empty keyword does not return the catalogue.");
 
         var (p, size) = Paging.Normalise(page, pageSize);
-        var normalised = keyword.Trim();
+        using var connection = await connections.OpenAsync(ct);
 
-        // The stored name is normalised once, into the generated column; the keyword is
-        // normalised by the same SQL function at query time. Both sides therefore pass through
-        // identical logic, which is what makes FR-017 hold in both diacritic directions.
-        var query = db.Set<Product>().Where(x =>
-            EF.Functions.Like(
-                EF.Property<string>(x, "NameNormalized"),
-                "%" + CatalogFunctions.Normalise(normalised) + "%"));
+        var where = $"""
+            FROM catalog.product p
+            WHERE p.name_normalized LIKE '%' || catalog.normalise_name(@keyword) || '%'
+              AND {CatalogVisibility.ActiveOnly("p")}
+            """;
 
-        var total = await query.CountAsync(ct);
+        var args = new { keyword = keyword.Trim(), offset = (p - 1) * size, limit = size };
 
-        var items = await query
-            .OrderBy(x => x.Name)
-            .ThenBy(x => x.Id)
-            .Skip((p - 1) * size)
-            .Take(size)
-            .Select(x => new
-            {
-                x.Id,
-                x.Name,
-                x.StockQuantity,
-                PriceMinor = EF.Property<long>(x, "_priceMinor"),
-                Currency = EF.Property<string>(x, "_currencyCode"),
-                PrimaryImageUrl = x.Images
-                    .OrderByDescending(i => i.IsPrimary).ThenBy(i => i.Position)
-                    .Select(i => i.Url).FirstOrDefault()
-            })
-            .ToListAsync(ct);
+        var total = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            $"SELECT count(*) {where}", args, cancellationToken: ct));
 
-        var summaries = items.Select(x => new ProductSummaryDto(
-            x.Id, x.Name, x.PrimaryImageUrl,
-            new PriceDisplayDto(new MoneyDto(x.PriceMinor, x.Currency), null, false),
-            x.StockQuantity == 0)).ToList();
+        var rows = await connection.QueryAsync<ProductReadRow>(new CommandDefinition($"""
+            SELECT p.id             AS "Id",
+                   p.name           AS "Name",
+                   p.price_minor    AS "PriceMinor",
+                   p.currency_code  AS "CurrencyCode",
+                   p.stock_quantity AS "StockQuantity",
+                   (SELECT i.url FROM catalog.product_image i
+                     WHERE i.product_id = p.id
+                     ORDER BY i.is_primary DESC, i.position
+                     LIMIT 1)       AS "PrimaryImageUrl"
+            {where}
+            ORDER BY p.name, p.id
+            OFFSET @offset LIMIT @limit
+            """, args, cancellationToken: ct));
 
-        return Result<ProductPageDto>.Ok(new ProductPageDto(
-            summaries, p, size, total,
-            summaries.Count == 0
+        var items = rows.Select(r => new ProductSummaryDto(
+            r.Id, r.Name, r.PrimaryImageUrl,
+            new PriceDisplayDto(new MoneyDto(r.PriceMinor, r.CurrencyCode), null, false),
+            r.StockQuantity == 0)).ToList();
+
+        return Result<ProductPageDto>.Ok(new ProductPageDto(items, p, size, total,
+            items.Count == 0
                 ? total == 0 ? ReasonCodes.NoMatches : ReasonCodes.PageBeyondLast
                 : null));
     }
-}
-
-/// <summary>
-/// Maps to catalog.normalise_name(text), the IMMUTABLE wrapper the migrations create
-/// (research.md R3). Callable only inside a query — EF translates it to SQL.
-/// </summary>
-public static class CatalogFunctions
-{
-    public static string Normalise(string value) =>
-        throw new InvalidOperationException(
-            "catalog.normalise_name is a database function; call it inside a LINQ query.");
 }

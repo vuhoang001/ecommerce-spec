@@ -82,7 +82,7 @@ public class RateLimitTests(ResilienceFixture fixture)
         // research.md R11: the budget is held PER INSTANCE, so N instances admit roughly N times
         // the per-instance budget under uneven balancing. This test documents that imprecision
         // rather than pretending the limit is exact — making it exact needs a shared counter,
-        // which means Redis, which STK-001 does not permit without a GOV-002 amendment.
+        // which means Redis, which STK-001 does not permit without a the Governance amendment clause amendment.
         var instanceA = fixture.CreateClient();
         var instanceB = fixture.CreateClient();
 

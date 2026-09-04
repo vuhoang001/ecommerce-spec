@@ -11,15 +11,28 @@ namespace ECommerce.Shared.Messaging.Outbox;
 /// </remarks>
 public static class OutboxClaim
 {
-    /// <summary>Claims up to <c>@batch</c> undelivered rows, skipping rows another relay holds.</summary>
-    public const string Sql = """
-        SELECT id
-        FROM catalog.outbox_message
-        WHERE delivered_at IS NULL
-        ORDER BY enqueued_at
-        LIMIT @batch
-        FOR UPDATE SKIP LOCKED
-        """;
+    /// <summary>
+    /// Claims up to <c>@batch</c> undelivered rows, skipping rows another relay holds.
+    /// </summary>
+    /// <remarks>
+    /// The schema is a parameter, not a literal. This is shared infrastructure: each module owns
+    /// its own outbox in its own schema (DAT-001), so hardcoding one module's schema here would
+    /// both violate DAT-006 and silently point every other module's relay at the wrong table.
+    /// </remarks>
+    public static string SqlFor(string schema)
+    {
+        if (string.IsNullOrWhiteSpace(schema))
+            throw new ArgumentException("A relay must name the schema it drains.", nameof(schema));
+
+        return $"""
+            SELECT id
+            FROM {schema}.outbox_message
+            WHERE delivered_at IS NULL
+            ORDER BY enqueued_at
+            LIMIT @batch
+            FOR UPDATE SKIP LOCKED
+            """;
+    }
 
     /// <summary>The clause REL-002 requires. Asserted by name so a rewrite cannot quietly drop it.</summary>
     public const string RequiredLockingClause = "FOR UPDATE SKIP LOCKED";

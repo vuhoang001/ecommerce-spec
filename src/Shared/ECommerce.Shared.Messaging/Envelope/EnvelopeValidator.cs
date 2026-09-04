@@ -1,7 +1,7 @@
 namespace ECommerce.Shared.Messaging.Envelope;
 
 /// <summary>
-/// MSG-001 — a message missing any envelope field is rejected at the transport boundary.
+/// COM-006 — a message missing any envelope field is rejected at the transport boundary.
 /// </summary>
 /// <remarks>
 /// REL-003's inbox key is <c>(message_id, consumer)</c>, so deduplication is only possible
@@ -25,7 +25,7 @@ public static class EnvelopeValidator
             failures.Add(new Failure("type", "Required."));
 
         if (envelope.Version <= 0)
-            failures.Add(new Failure("version", "Required and positive; MSG-003 versions schemas."));
+            failures.Add(new Failure("version", "Required and positive; COM-008 versions schemas."));
 
         if (envelope.OccurredAt == default)
             failures.Add(new Failure("occurred_at", "Required; REL-004 orders by it."));
@@ -47,7 +47,7 @@ public static class EnvelopeValidator
         if (failures.Count == 0) return;
 
         throw new InvalidOperationException(
-            "MSG-001: message rejected at the transport boundary — " +
+            "COM-006: message rejected at the transport boundary — " +
             string.Join("; ", failures.Select(f => $"{f.Field}: {f.Reason}")));
     }
 }

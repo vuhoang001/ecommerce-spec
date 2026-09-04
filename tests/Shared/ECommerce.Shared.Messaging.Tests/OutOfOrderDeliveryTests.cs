@@ -13,6 +13,7 @@ namespace ECommerce.Shared.Messaging.Tests;
 [Collection("messaging")]
 public class OutOfOrderDeliveryTests(MessagingFixture fixture)
 {
+    private static readonly DateTimeOffset SeededAt = new(2026, 9, 4, 12, 0, 0, TimeSpan.Zero);
     private static DiscountChangedV1 Applied(Guid productId, long minor, DateTimeOffset at)
         => new()
         {
@@ -30,7 +31,7 @@ public class OutOfOrderDeliveryTests(MessagingFixture fixture)
     {
         await using var db = fixture.NewContext();
         var p = Product.Create(Guid.NewGuid(), "P", null, Money.FromMinor(250_000, "VND"), 1,
-            ProductStatus.Active);
+            ProductStatus.Active, SeededAt);
         db.Add(p);
         await db.SaveChangesAsync();
         return p.Id;

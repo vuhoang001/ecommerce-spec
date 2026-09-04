@@ -137,7 +137,7 @@ not by configuration.
   removed from rotation, and every page still renders (research.md R13, SC-008). **This is the test
   that catches the readiness probe being written the conventional way.**
 
-### 9. Money (MON-001)
+### 9. Money (TXN-006)
 
 - The architecture test fails the build if `float`, `double`, or `decimal` appears in a money path.
 - Every monetary value on the wire is `amountMinor` as an integer plus a currency code — check the

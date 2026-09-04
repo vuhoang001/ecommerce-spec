@@ -5,11 +5,11 @@ using FluentAssertions;
 namespace ECommerce.ArchitectureTests;
 
 /// <summary>
-/// PRM-001 (NON-NEGOTIABLE) — the promotion module calculates and returns a discount result;
+/// PRM-001 [not adopted — see architecture-burndown.md BD-005] (NON-NEGOTIABLE) — the promotion module calculates and returns a discount result;
 /// the calling module applies it. Catalog never calculates a discount and never writes to
 /// Promotion.
 /// </summary>
-public class Prm001NoDiscountCalculationTests
+public class CatalogNeverCalculatesDiscountTests
 {
     [Fact]
     public void The_promotion_port_exposes_no_write_operation()
@@ -22,7 +22,7 @@ public class Prm001NoDiscountCalculationTests
             .Select(m => m.Name)
             .ToList();
 
-        writeMethods.Should().BeEmpty("PRM-001 makes the promotion port strictly read-only");
+        writeMethods.Should().BeEmpty("PRM-001 [not adopted — see architecture-burndown.md BD-005] makes the promotion port strictly read-only");
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class Prm001NoDiscountCalculationTests
     [Fact]
     public void Catalog_consumes_no_promotion_message_as_a_write_into_promotion()
     {
-        // Catalog may reference Promotion.Contracts (MOD-001) but must never reference any
+        // Catalog may reference Promotion.Contracts (ARC-001) but must never reference any
         // other Promotion assembly, which is where a write path would have to live.
         var violations = ModuleAssemblies.All()
             .Where(a => a.GetName().Name!.StartsWith("ECommerce.Catalog.", StringComparison.Ordinal))

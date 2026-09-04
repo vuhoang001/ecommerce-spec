@@ -7,7 +7,7 @@ namespace ECommerce.Catalog.Domain;
 /// </summary>
 /// <remarks>
 /// The price is held as a 64-bit integer minor amount plus a currency code and surfaced as
-/// <see cref="Money"/> (MON-001). Stock is read here and never written — inventory belongs
+/// <see cref="Money"/> (TXN-006). Stock is read here and never written — inventory belongs
 /// to another feature (spec Out of Scope).
 /// </remarks>
 public sealed class Product
@@ -58,6 +58,11 @@ public sealed class Product
     public ProductImage? PrimaryImage =>
         _images.FirstOrDefault(i => i.IsPrimary) ?? _images.OrderBy(i => i.Position).FirstOrDefault();
 
+    /// <remarks>
+    /// ARC-004: <paramref name="createdAt"/> is required rather than defaulted. Domain code must
+    /// not read the system clock — the caller injects time, so behaviour is reproducible and
+    /// testable without waiting.
+    /// </remarks>
     public static Product Create(
         Guid id,
         string name,
@@ -65,7 +70,7 @@ public sealed class Product
         Money price,
         int stockQuantity,
         ProductStatus status,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset createdAt)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("A product needs a name.", nameof(name));
@@ -82,8 +87,7 @@ public sealed class Product
             throw new ArgumentOutOfRangeException(
                 nameof(stockQuantity), stockQuantity, "A stock quantity cannot be negative.");
 
-        return new Product(id, trimmed, description, price, stockQuantity, status,
-            createdAt ?? DateTimeOffset.UtcNow);
+        return new Product(id, trimmed, description, price, stockQuantity, status, createdAt);
     }
 
     public void AssignTo(Category category)

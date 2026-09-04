@@ -4,7 +4,7 @@ using FluentAssertions;
 namespace ECommerce.Shared.Kernel.Tests;
 
 /// <summary>
-/// MON-001 / FR-032 / FR-033: money is a whole number of the smallest currency unit.
+/// TXN-006 / FR-032 / FR-033: money is a whole number of the smallest currency unit.
 /// For VND the minor unit is the dong itself, so the scale is 1, not 100.
 /// </summary>
 public class MoneyTests
@@ -70,7 +70,7 @@ public class MoneyTests
     [Fact]
     public void Is_never_expressed_as_a_floating_point_number()
     {
-        // MON-001 in the type system: the only numeric member is a 64-bit integer.
+        // TXN-006 in the type system: the only numeric member is a 64-bit integer.
         typeof(Money).GetProperty(nameof(Money.AmountMinor))!.PropertyType.Should().Be(typeof(long));
     }
 

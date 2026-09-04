@@ -26,7 +26,7 @@ public sealed class InboxMessage
     public static InboxMessage Record(Guid messageId, string consumer, DateTimeOffset receivedAt)
     {
         if (messageId == Guid.Empty)
-            throw new ArgumentException("MSG-001 requires a message_id.", nameof(messageId));
+            throw new ArgumentException("COM-006 requires a message_id.", nameof(messageId));
         if (string.IsNullOrWhiteSpace(consumer))
             throw new ArgumentException("REL-003 keys on (message_id, consumer).", nameof(consumer));
 

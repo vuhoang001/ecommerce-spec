@@ -19,7 +19,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Name).HasColumnName("name").HasMaxLength(Product.MaxNameLength).IsRequired();
         builder.Property(p => p.Description).HasColumnName("description");
 
-        // MON-001: the money columns are bigint minor units plus a currency code.
+        // TXN-006: the money columns are bigint minor units plus a currency code.
         builder.Property<long>("_priceMinor").HasColumnName("price_minor").HasColumnType("bigint").IsRequired();
         builder.Property<string>("_currencyCode").HasColumnName("currency_code")
             .HasColumnType("char(3)").IsRequired();

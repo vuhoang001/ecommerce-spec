@@ -81,7 +81,13 @@ public sealed class CatalogFixture : WebApplicationFactory<Program>, IAsyncLifet
         ProductStatus status = ProductStatus.Active,
         DateTimeOffset? createdAt = null)
         => Product.Create(Guid.NewGuid(), name, "A drink.", Money.FromMinor(priceMinor, "VND"),
-            stock, status, createdAt);
+            stock, status, createdAt ?? TestClock.Now);
+
+    /// <summary>ARC-004: tests inject time too, so seeded ordering is deterministic.</summary>
+    public static class TestClock
+    {
+        public static DateTimeOffset Now { get; } = new(2026, 9, 4, 12, 0, 0, TimeSpan.Zero);
+    }
 
     public static Category NewCategory(string name = "Coffee")
         => Category.Create(Guid.NewGuid(), name, name.ToLowerInvariant().Replace(' ', '-'));

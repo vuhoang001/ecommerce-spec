@@ -19,7 +19,7 @@ namespace ECommerce.Catalog.Infrastructure.Promotion;
 /// </para>
 /// COM-002: this adapter makes no further cross-module call while serving one — call depth 1.
 /// COM-003: it never enlists in the caller's database transaction.
-/// PRM-001: read-only. There is no method here that changes anything in Promotion.
+/// PRM-001 [not adopted — see architecture-burndown.md BD-005]: read-only. There is no method here that changes anything in Promotion.
 /// </remarks>
 public sealed class InProcessPromotionPricingAdapter : IPromotionPricingPort
 {

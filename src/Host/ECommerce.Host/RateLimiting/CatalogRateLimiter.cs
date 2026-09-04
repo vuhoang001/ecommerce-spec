@@ -14,7 +14,7 @@ namespace ECommerce.Host.RateLimiting;
 /// <remarks>
 /// research.md R11: the budget is the total divided by the instance count, so the limit is
 /// APPROXIMATE across a redundant deployment. Making it exact needs a shared counter, which
-/// means Redis, which STK-001 does not permit without a GOV-002 amendment. The limit exists
+/// means Redis, which STK-001 does not permit without a the Governance amendment clause amendment. The limit exists
 /// to stop a scraper pulling 100,000 products, not to meter a paid quota, so being off by a
 /// factor of the instance count under uneven balancing does not defeat its purpose.
 /// </remarks>

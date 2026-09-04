@@ -22,6 +22,7 @@ namespace ECommerce.Catalog.ResilienceTests;
 [Collection("resilience")]
 public class ProjectionSeedTests(ResilienceFixture fixture)
 {
+    private static readonly DateTimeOffset SeededAt = new(2026, 9, 4, 12, 0, 0, TimeSpan.Zero);
     private sealed class CountingPromotion(List<AppliedDiscount> discounts) : IPromotionPricingPort
     {
         public int ListCalls;
@@ -43,7 +44,7 @@ public class ProjectionSeedTests(ResilienceFixture fixture)
         using var scope = fixture.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<CatalogDbContext>();
         var p = Product.Create(Guid.NewGuid(), "Seeded", null, KernelMoney.FromMinor(250_000, "VND"),
-            1, ProductStatus.Active);
+            1, ProductStatus.Active, SeededAt);
         db.Add(p);
         await db.SaveChangesAsync();
         return p.Id;

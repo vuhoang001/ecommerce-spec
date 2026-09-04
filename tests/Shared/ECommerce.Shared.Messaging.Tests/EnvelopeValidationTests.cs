@@ -4,7 +4,7 @@ using FluentAssertions;
 namespace ECommerce.Shared.Messaging.Tests;
 
 /// <summary>
-/// MSG-001 — a message missing any of message_id, type, version, occurred_at, correlation_id
+/// COM-006 — a message missing any of message_id, type, version, occurred_at, correlation_id
 /// or causation_id is rejected at the transport boundary.
 /// </summary>
 public class EnvelopeValidationTests
@@ -60,7 +60,7 @@ public class EnvelopeValidationTests
         var act = () => EnvelopeValidator.ThrowIfInvalid(envelope);
 
         act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*MSG-001*")
+            .WithMessage("*COM-006*")
             .And.Message.Should().Contain("message_id").And.Contain("causation_id");
     }
 }

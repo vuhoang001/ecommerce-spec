@@ -1,4 +1,3 @@
-using ECommerce.Catalog.Application.Search;
 using ECommerce.Catalog.Domain;
 using ECommerce.Shared.Messaging.Inbox;
 using Microsoft.EntityFrameworkCore;
@@ -29,18 +28,15 @@ public class CatalogDbContext : DbContext
     {
         modelBuilder.HasDefaultSchema(Schema);
 
-        // research.md R3 — the same normalisation applies to the stored name (as a generated
-        // column) and to the keyword (as a call), so a match works in both directions.
-        modelBuilder
-            .HasDbFunction(typeof(CatalogFunctions).GetMethod(nameof(CatalogFunctions.Normalise))!)
-            .HasName("normalise_name")
-            .HasSchema(Schema);
+        // The name normalisation function is now called directly from the Dapper read paths
+        // (DAT-004), so EF no longer needs a DbFunction mapping for it.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CatalogDbContext).Assembly);
         modelBuilder.ApplyConfiguration(new InboxMessageConfiguration());
 
-        // FR-001 / SC-002: only Active products ever reach a customer, on every read path.
-        // A global filter fails closed; filtering at each call site is one forgotten call
-        // site away from leaking a hidden product (research.md R9).
+        // Defence in depth only. Under DAT-004 reads go through Dapper, which does not see this
+        // filter — DAT-005's shared fragment is what actually guarantees FR-001 and SC-002 on the
+        // read paths now. This stays because any EF read that ever appears should still fail
+        // closed rather than leak a concealed product.
         modelBuilder.Entity<Product>().HasQueryFilter(p => p.Status == ProductStatus.Active);
 
         base.OnModelCreating(modelBuilder);

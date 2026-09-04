@@ -16,7 +16,7 @@ public sealed class DiscountProjectionConfiguration : IEntityTypeConfiguration<D
         builder.Property(d => d.ProductId).HasColumnName("product_id");
         builder.Property(d => d.PromotionId).HasColumnName("promotion_id").IsRequired();
 
-        // MON-001: bigint minor units, never a floating-point type.
+        // TXN-006: bigint minor units, never a floating-point type.
         builder.Property<long>("_discountedPriceMinor")
             .HasColumnName("discounted_price_minor").HasColumnType("bigint").IsRequired();
         builder.Property<string>("_currencyCode")

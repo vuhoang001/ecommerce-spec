@@ -1,6 +1,6 @@
 namespace ECommerce.Shared.Messaging.Envelope;
 
-/// <summary>The six fields MSG-001 requires on every message.</summary>
+/// <summary>The six fields COM-006 requires on every message.</summary>
 public sealed record MessageEnvelope(
     Guid MessageId,
     string Type,

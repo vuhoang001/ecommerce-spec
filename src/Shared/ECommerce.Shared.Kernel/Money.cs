@@ -1,13 +1,13 @@
 namespace ECommerce.Shared.Kernel;
 
 /// <summary>
-/// A monetary amount as a whole number of the smallest currency unit (MON-001).
+/// A monetary amount as a whole number of the smallest currency unit (TXN-006).
 /// For VND the minor unit is the dong itself, so the scale is 1 rather than 100 —
 /// the type carries the amount as given and never rescales it.
 /// </summary>
 /// <remarks>
 /// The only numeric member is a 64-bit integer. Floating-point and decimal types are
-/// banned from every money path by the MON-001 architecture test; wrapping the integer
+/// banned from every money path by the TXN-006 architecture test; wrapping the integer
 /// gives that test one type to assert on instead of a rule about bare longs it cannot
 /// tell apart from a stock count.
 /// </remarks>

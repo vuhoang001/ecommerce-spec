@@ -33,7 +33,7 @@ public sealed class PromotionFake : IPromotionPricingPort
         => Task.FromResult<IReadOnlyList<AppliedDiscount>>(ActiveDiscounts);
 
     /// <summary>
-    /// A fixed instant, deliberately. A pricing read is a pure function of its input (PRM-001),
+    /// A fixed instant, deliberately. A pricing read is a pure function of its input (PRM-001 [not adopted — see architecture-burndown.md BD-005]),
     /// so stamping DateTimeOffset.UtcNow per call would make the fake non-deterministic and the
     /// purity test would be asserting the fake's clock rather than the port's contract.
     /// </summary>

@@ -15,7 +15,7 @@ Every scenario in `quickstart.md` mapped to the test that proves it. All test pr
 | 6. Projection consumer (REL-003, REL-004, REL-005) | `InboxDeduplicationTests`, `OutOfOrderDeliveryTests`, `TolerantReaderTests`, `EnvelopeValidationTests` | ✅ |
 | 7. Rate limiting (FR-035, FR-037, SC-014) | `RateLimitTests` | ✅ |
 | 8. Availability and recovery (FR-036, SC-015, SC-016) | `HealthProbeTests`, `ProjectionSeedTests` | ⚠️ **partial** |
-| 9. Money (MON-001, FR-030, SC-012) | `MoneyTests`, `Mon001IntegerMoneyTests`, `MoneyRoundTripTests` | ✅ |
+| 9. Money (TXN-006, FR-030, SC-012) | `MoneyTests`, `Mon001IntegerMoneyTests`, `MoneyRoundTripTests` | ✅ |
 
 ## Test projects
 
