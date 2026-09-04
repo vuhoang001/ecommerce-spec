@@ -77,18 +77,28 @@ public class ProjectionSeedTests(ResilienceFixture fixture)
         var dbB = scopeB.ServiceProvider.GetRequiredService<CatalogDbContext>();
 
         // Both "instances" start at the same moment, as they would behind a load balancer.
-        var results = await Task.WhenAll(
+        var seed = async () => await Task.WhenAll(
             NewSeeder(dbA, promotionA).SeedAsync(),
             NewSeeder(dbB, promotionB).SeedAsync());
+
+        // The failure this guards against is a duplicate-key violation: before the connection was
+        // pinned for the advisory lock's lifetime, both instances inserted the same row and one
+        // of them threw. That is the regression, and it is deterministic.
+        await seed.Should().NotThrowAsync(
+            "concurrent seeding must not collide on the projection's primary key");
 
         using var check = fixture.Services.CreateScope();
         var db = check.ServiceProvider.GetRequiredService<CatalogDbContext>();
 
         (await db.DiscountProjections.CountAsync(d => d.ProductId == productId))
-            .Should().Be(1, "the advisory lock means one instance seeds, not both");
+            .Should().Be(1, "the projection ends correct however the two instances interleaved");
 
-        results.Count(r => r > 0).Should().BeLessThanOrEqualTo(1,
-            "at most one instance performs the seed");
+        // Deliberately NOT asserted: that only one instance performed a seed. The advisory lock
+        // prevents CONCURRENT full seeds; it does not make seeding happen once for all time. If
+        // the first instance finishes and releases before the second attempts, the second
+        // legitimately seeds too — harmlessly, because the seed is an idempotent upsert. On a
+        // slower machine that interleaving is the common one, and asserting otherwise made this
+        // test fail on CI while passing locally.
     }
 
     [Fact]
