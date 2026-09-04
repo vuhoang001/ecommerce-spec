@@ -4,10 +4,10 @@ using FluentAssertions;
 namespace ECommerce.ArchitectureTests;
 
 /// <summary>
-/// MOD-001: A module MUST NOT reference any assembly of another module except that
+/// ARC-001: A module MUST NOT reference any assembly of another module except that
 /// module's .Contracts assembly.
 /// </summary>
-public class Mod001ModuleReferencesTests
+public class Arc001ModuleReferencesTests
 {
     [Fact]
     public void Module_references_only_another_modules_contracts()
@@ -31,6 +31,6 @@ public class Mod001ModuleReferencesTests
         }
 
         violations.Should().BeEmpty(
-            "MOD-001 allows a cross-module reference only to that module's .Contracts assembly");
+            "ARC-001 allows a cross-module reference only to that module's .Contracts assembly");
     }
 }

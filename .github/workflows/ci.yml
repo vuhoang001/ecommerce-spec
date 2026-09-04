@@ -32,6 +32,14 @@ jobs:
       - name: Event schema compatibility
         run: ./scripts/check-schema-compatibility.sh origin/main
 
+      # STK-001 — the Technology Constraints stack is closed
+      - name: Approved package check
+        run: ./scripts/check-approved-packages.sh
+
+      # DAT-006 — raw SQL must not reference another module's schema
+      - name: Cross-schema SQL scan
+        run: ./scripts/check-sql-schemas.sh src
+
       # GATE-001 — every named check runs and blocks the merge
       - name: Test
         run: dotnet test ECommerce.sln --no-build -c Release --logger "trx;LogFileName=test.trx"

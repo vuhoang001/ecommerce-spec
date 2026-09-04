@@ -8,7 +8,7 @@ namespace ECommerce.Catalog.Application.Ports;
 /// <remarks>
 /// Declared here, in the CONSUMER, and implemented outside the domain — that ownership is what
 /// the COM-001 architecture test asserts. It is deliberately READ-ONLY: there is no method that
-/// changes anything in Promotion, which is PRM-001 expressed in the type system rather than in
+/// changes anything in Promotion, which is PRM-001 [not adopted — see architecture-burndown.md BD-005] expressed in the type system rather than in
 /// a comment. Transport is an in-process adapter today and a gRPC client after extraction
 /// (research.md R5); neither this interface nor its callers change when that is swapped.
 /// </remarks>

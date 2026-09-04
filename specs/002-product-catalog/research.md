@@ -38,7 +38,7 @@ be confirmed.
 - *Ask Promotion for all active discounts on every filter request*: no stored copy, always current.
   Rejected — it puts an unbounded cross-module read on the hot path and makes filtering fail
   whenever Promotion is slow, which contradicts SC-008.
-- *Promotion writes discounts into a shared table*: rejected outright by DAT-001 and PRM-001.
+- *Promotion writes discounts into a shared table*: rejected outright by DAT-001 and PRM-001 [withdrawn citation].
 
 ---
 
@@ -89,16 +89,16 @@ a generated column; this is a known, documented step, not a workaround.
 `long AmountMinor` and a 3-letter currency code. PostgreSQL columns are `bigint`. Arithmetic lives
 on the type; no bare `long` crosses a boundary as a price.
 
-**Rationale**: MON-001 requires integer minor units and bans floating point. Wrapping the integer
+**Rationale**: TXN-006 requires integer minor units and bans floating point. Wrapping the integer
 gives the architecture test one type to assert on rather than a rule about primitive `long` fields
-it cannot distinguish from a stock count. `Money` passes MOD-003's banking-app test unchanged.
+it cannot distinguish from a stock count. `Money` passes ARC-003's banking-app test unchanged.
 
 **Note on the currency in the spec's examples**: prices of 50,000–200,000 read as VND, whose minor
 unit is the dong itself — the minor-unit scale is 1, not 100. The type carries the scale per
 currency rather than assuming cents.
 
 **Alternatives considered**:
-- *`decimal`*: correct to 28 digits and still banned by MON-001, which names integer types.
+- *`decimal`*: correct to 28 digits and still banned by TXN-006, which names integer types.
 - *Bare `long`*: indistinguishable from any other count in an architecture test, and loses currency.
 
 ---
@@ -159,9 +159,9 @@ what makes the failure legible when it breaks after a library upgrade.
 **Decision**: NetArchTest.Rules, one test class per constitution rule, each named for its identifier
 (`MOD_001_ModuleReferencesOnlyContracts`).
 
-**Rationale**: GATE-004 requires reviews to cite identifiers; naming the tests after them makes a CI
+**Rationale**: GATE-001 requires reviews to cite identifiers; naming the tests after them makes a CI
 failure cite the rule by itself. NetArchTest reads assembly references and type declarations
-directly, which is exactly what MOD-001 and MOD-002 are stated in terms of.
+directly, which is exactly what ARC-001 and ARC-002 are stated in terms of.
 
 **Alternatives considered**:
 - *ArchUnitNET*: richer rule language, heavier. Either works; this choice is not load-bearing.
@@ -203,7 +203,7 @@ contract suite against both keeps the fake honest.
 when one instance fails, which means more than one instance. A counter held in each instance's memory
 multiplies the effective limit by the instance count; a shared counter needs a shared store. The
 obvious shared store is Redis — and STK-001 names the stack as .NET 8, PostgreSQL, and RabbitMQ,
-so adding Redis is a constitution amendment under GOV-002, not a plan decision.
+so adding Redis is a constitution amendment under the Governance amendment clause, not a plan decision.
 
 **Decision**: The rate limiter built into .NET 8 (`Microsoft.AspNetCore.RateLimiting`), a token
 bucket partitioned by caller address, held in each instance's memory. The per-instance budget is the
@@ -216,7 +216,7 @@ count during uneven load balancing does not defeat that purpose. Precision would
 
 **Alternatives considered**:
 - *Redis-backed distributed limiter*: exact across instances, and the honest recommendation if the
-  limit ever needs to be precise. Requires amending STK-001 under GOV-002 first. Not taken now
+  limit ever needs to be precise. Requires amending STK-001 under the Governance amendment clause first. Not taken now
   because nothing in the spec asks for precision.
 - *Counters in PostgreSQL*: no new component, and a write on every read request — it turns the
   read-only path into a write path and spends the p95 budget on bookkeeping.

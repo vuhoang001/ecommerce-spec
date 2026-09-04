@@ -1,5 +1,7 @@
 using ECommerce.Catalog.Application.Ports;
 using ECommerce.Catalog.Application.Pricing;
+using ECommerce.Catalog.Application.Reads;
+using ECommerce.Catalog.Infrastructure.Reads;
 using ECommerce.Catalog.Domain;
 using ECommerce.Catalog.Infrastructure;
 using ECommerce.Shared.Kernel;
@@ -13,6 +15,7 @@ namespace ECommerce.Catalog.ContractTests;
 /// <summary>Real PostgreSQL, a controllable Promotion, and a clock the test moves.</summary>
 public sealed class PricingFixture : IAsyncLifetime
 {
+    private static readonly DateTimeOffset SeededAt = new(2026, 9, 4, 12, 0, 0, TimeSpan.Zero);
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
         .WithImage("postgres:16-alpine")
         .WithDatabase("ecommerce").WithUsername("ecommerce").WithPassword("ecommerce")
@@ -49,13 +52,14 @@ public sealed class PricingFixture : IAsyncLifetime
     }
 
     public ProductPriceResolver Resolver(CatalogDbContext db) =>
-        new(db, Promotion, Clock, Options, NullLogger<ProductPriceResolver>.Instance);
+        new(new CatalogReadConnection(db), Promotion, Clock, Options,
+            NullLogger<ProductPriceResolver>.Instance);
 
     public async Task<Product> SeedProductAsync(long priceMinor = 250_000)
     {
         await using var db = NewContext();
         var product = Product.Create(Guid.NewGuid(), "Cà phê sữa đá", "d",
-            Money.FromMinor(priceMinor, "VND"), 5, ProductStatus.Active);
+            Money.FromMinor(priceMinor, "VND"), 5, ProductStatus.Active, SeededAt);
         db.Add(product);
         await db.SaveChangesAsync();
         return product;

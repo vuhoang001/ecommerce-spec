@@ -9,7 +9,7 @@ description: "Task list for Product Catalog implementation"
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md — all present
 
-**Tests**: **REQUIRED, not optional.** Constitution v3.0.0 TST-001 is NON-NEGOTIABLE: tests come from
+**Tests**: **REQUIRED, not optional.** Constitution v3.0.0 QAG-001 is NON-NEGOTIABLE: tests come from
 acceptance criteria, are written before the implementation, and MUST be observed to fail first. Every
 phase below puts its tests ahead of its implementation for that reason, and a task pair is done only
 when the test was seen red before it went green.
@@ -46,7 +46,7 @@ commit onward.
 - [X] T004 [P] Add PostgreSQL 16 and RabbitMQ services for local runs in `docker-compose.yml` (plan.md Storage, quickstart.md Prerequisites)
 - [X] T005 [P] Add the CI workflow running build plus every test project in `.github/workflows/ci.yml` (GATE-001)
 - [X] T006 [P] Add the cross-schema foreign key scanner over generated migrations in `scripts/check-migrations.sh` (DAT-002)
-- [X] T007 Wire `scripts/check-migrations.sh` into the CI workflow as a blocking step in `.github/workflows/ci.yml` (GATE-002)
+- [X] T007 Wire `scripts/check-migrations.sh` into the CI workflow as a blocking step in `.github/workflows/ci.yml` (GATE-001)
 
 ---
 
@@ -63,22 +63,22 @@ exists. Placing them in any one story would make this phase impossible to comple
 
 ### Architecture gates (write first — these read assemblies, so they compile before the code exists)
 
-- [X] T008 [P] Failing architecture test that a module references only another module's `.Contracts` in `tests/ECommerce.ArchitectureTests/Mod001ModuleReferencesTests.cs` (MOD-001)
-- [X] T009 [P] Failing architecture test that `*.Contracts` declares no entity, EF type, or handler in `tests/ECommerce.ArchitectureTests/Mod002ContractsContentTests.cs` (MOD-002)
-- [X] T010 [P] Failing architecture test that no business type lives in `Shared` in `tests/ECommerce.ArchitectureTests/Mod003SharedPrimitivesTests.cs` (MOD-003)
-- [X] T011 [P] Failing architecture test that the module assembly set is exactly catalog, user, order, promotion in `tests/ECommerce.ArchitectureTests/Mod005ModuleSetTests.cs` (MOD-005)
-- [X] T012 [P] Failing architecture test banning `float`, `double`, and `decimal` in any money path in `tests/ECommerce.ArchitectureTests/Mon001IntegerMoneyTests.cs` (MON-001)
+- [X] T008 [P] Failing architecture test that a module references only another module's `.Contracts` in `tests/ECommerce.ArchitectureTests/Mod001ModuleReferencesTests.cs` (ARC-001)
+- [X] T009 [P] Failing architecture test that `*.Contracts` declares no entity, EF type, or handler in `tests/ECommerce.ArchitectureTests/Mod002ContractsContentTests.cs` (ARC-002)
+- [X] T010 [P] Failing architecture test that no business type lives in `Shared` in `tests/ECommerce.ArchitectureTests/Mod003SharedPrimitivesTests.cs` (ARC-003)
+- [X] T011 [P] Failing architecture test that the module assembly set is exactly catalog, user, order, promotion in `tests/ECommerce.ArchitectureTests/Mod005ModuleSetTests.cs` (not a constitution rule — a plan-level statement)
+- [X] T012 [P] Failing architecture test banning `float`, `double`, and `decimal` in any money path in `tests/ECommerce.ArchitectureTests/Mon001IntegerMoneyTests.cs` (TXN-006)
 - [X] T013 [P] Failing architecture test banning `TransactionScope` and multi-resource enlistment in `tests/ECommerce.ArchitectureTests/Txn002NoDistributedTransactionTests.cs` (TXN-002)
 
 ### Money and shared primitives
 
-- [X] T014 [P] Failing unit tests for `Money` — whole dong only, rejects fractional and mismatched currency, arithmetic stays integral — in `tests/Shared/ECommerce.Shared.Kernel.Tests/MoneyTests.cs` (MON-001, FR-032, FR-033)
-- [X] T015 Implement `Money` as a readonly record struct over `long` plus an ISO 4217 code in `src/Shared/ECommerce.Shared.Kernel/Money.cs` (MON-001)
-- [X] T016 [P] Implement `Result`, `IClock`, and `PagedResult` primitives in `src/Shared/ECommerce.Shared.Kernel/Primitives/` (MOD-003)
+- [X] T014 [P] Failing unit tests for `Money` — whole dong only, rejects fractional and mismatched currency, arithmetic stays integral — in `tests/Shared/ECommerce.Shared.Kernel.Tests/MoneyTests.cs` (TXN-006, FR-032, FR-033)
+- [X] T015 Implement `Money` as a readonly record struct over `long` plus an ISO 4217 code in `src/Shared/ECommerce.Shared.Kernel/Money.cs` (TXN-006)
+- [X] T016 [P] Implement `Result`, `IClock`, and `PagedResult` primitives in `src/Shared/ECommerce.Shared.Kernel/Primitives/` (ARC-003)
 
 ### Domain types shared by every story
 
-- [X] T017 [P] Failing domain invariant tests for `Product` — non-empty name, non-negative price and stock — in `tests/Catalog/ECommerce.Catalog.UnitTests/ProductInvariantTests.cs` (TST-002)
+- [X] T017 [P] Failing domain invariant tests for `Product` — non-empty name, non-negative price and stock — in `tests/Catalog/ECommerce.Catalog.UnitTests/ProductInvariantTests.cs` (QAG-002, QAG-004, QAG-005)
 - [X] T018 Create the `Product` aggregate with its invariants in `src/Modules/Catalog/ECommerce.Catalog.Domain/Product.cs` (data-model.md)
 - [X] T019 [P] Create `Category` in `src/Modules/Catalog/ECommerce.Catalog.Domain/Category.cs` (data-model.md)
 - [X] T020 [P] Create `ProductStatus` with Draft, Active, Hidden, Discontinued in `src/Modules/Catalog/ECommerce.Catalog.Domain/ProductStatus.cs` (data-model.md)
@@ -119,7 +119,7 @@ phase compiles on its own. User stories may begin.
 to a second category. Page through it and confirm the count, the position, the "Out of stock" label,
 and that the two-category product appears exactly once per listing.
 
-### Tests for User Story 1 (write first, observe failing — TST-001)
+### Tests for User Story 1 (write first, observe failing — QAG-001)
 
 - [X] T037 [P] [US1] Failing integration test for paging a 30-product category at page size 24, asserting total and position, in `tests/Catalog/ECommerce.Catalog.IntegrationTests/BrowseCategoryTests.cs` (US1/AC1, FR-003, FR-007)
 - [X] T038 [P] [US1] Failing integration test that a stock-0 product stays listed and labelled in `tests/Catalog/ECommerce.Catalog.IntegrationTests/OutOfStockListingTests.cs` (US1/AC2, FR-005, SC-007)
@@ -160,35 +160,35 @@ detail view on its own; 4B adds everything discount-related, and is what User St
 **Checkpoint 4A**: a customer can open any product and see everything about it at its list price.
 Demonstrable on its own, before any discount work exists.
 
-### Phase 4B — Discount integration (tests first, observe failing — TST-001)
+### Phase 4B — Discount integration (tests first, observe failing — QAG-001)
 
 - [X] T049 [P] [US2] Failing integration test that an applied discount shows both prices and matches exactly what the port returned in `tests/Catalog/ECommerce.Catalog.IntegrationTests/DiscountedDetailTests.cs` (US2/AC2, FR-010, SC-006)
-- [X] T050 [P] [US2] Failing contract test that a promotion rejection shows the undiscounted price and logs the reason unshown in `tests/Catalog/ECommerce.Catalog.ContractTests/PromotionRejectionTests.cs` (FR-012, SC-009, PRM-003)
-- [X] T051 [P] [US2] Failing contract test that an unreachable Promotion falls back to the discount copy marked out of date in `tests/Catalog/ECommerce.Catalog.ContractTests/PromotionUnavailableTests.cs` (FR-013, SC-008, PRM-003)
+- [X] T050 [P] [US2] Failing contract test that a promotion rejection shows the undiscounted price and logs the reason unshown in `tests/Catalog/ECommerce.Catalog.ContractTests/PromotionRejectionTests.cs` (FR-012, SC-009, PRM-003 [withdrawn citation])
+- [X] T051 [P] [US2] Failing contract test that an unreachable Promotion falls back to the discount copy marked out of date in `tests/Catalog/ECommerce.Catalog.ContractTests/PromotionUnavailableTests.cs` (FR-013, SC-008, PRM-003 [withdrawn citation])
 - [X] T052 [P] [US2] Failing contract test that a copy past 15 minutes, and an absent one, both fall back to the undiscounted price marked out of date in `tests/Catalog/ECommerce.Catalog.ContractTests/ProjectionStalenessTests.cs` (FR-015)
-- [X] T053 [P] [US2] Failing contract test that calling the discount port twice with the same input yields the same result and changes no state in `tests/Catalog/ECommerce.Catalog.ContractTests/PromotionPortPurityTests.cs` (PRM-001, FR-011)
+- [X] T053 [P] [US2] Failing contract test that calling the discount port twice with the same input yields the same result and changes no state in `tests/Catalog/ECommerce.Catalog.ContractTests/PromotionPortPurityTests.cs` (PRM-001 [withdrawn citation], FR-011)
 - [X] T054 [P] [US2] Failing test that a replayed `promotion.discount.changed.v1` produces one effect in `tests/Shared/ECommerce.Shared.Messaging.Tests/InboxDeduplicationTests.cs` (REL-003)
 - [X] T055 [P] [US2] Failing test that reverse-order delivery converges to the same discount copy state in `tests/Shared/ECommerce.Shared.Messaging.Tests/OutOfOrderDeliveryTests.cs` (REL-004)
 - [X] T056 [P] [US2] Failing test that a payload with an unknown field is consumed without error in `tests/Catalog/ECommerce.Catalog.ContractTests/TolerantReaderTests.cs` (REL-005)
-- [X] T057 [P] [US2] Failing test that a message missing any of `message_id`, `type`, `version`, `occurred_at`, `correlation_id`, or `causation_id` is rejected at the transport boundary in `tests/Shared/ECommerce.Shared.Messaging.Tests/EnvelopeValidationTests.cs` (MSG-001)
+- [X] T057 [P] [US2] Failing test that a message missing any of `message_id`, `type`, `version`, `occurred_at`, `correlation_id`, or `causation_id` is rejected at the transport boundary in `tests/Shared/ECommerce.Shared.Messaging.Tests/EnvelopeValidationTests.cs` (COM-006)
 - [X] T058 [P] [US2] Failing test that two instances starting cold seed the discount copy exactly once in `tests/ECommerce.Catalog.ResilienceTests/ProjectionSeedTests.cs` (FR-031, research.md R12)
 - [X] T059 [P] [US2] Failing test that a discount starting, changing, or ending reaches the discount copy within 1 minute in `tests/Catalog/ECommerce.Catalog.IntegrationTests/DiscountPropagationTests.cs` (SC-011, FR-031)
 
-- [X] T060 [P] [US2] Add `promotion_pricing.proto` and generation settings in `src/Modules/Promotion/ECommerce.Promotion.Contracts/` (contracts/promotion_pricing.proto, MOD-002)
-- [X] T061 [US2] Declare the consumer-owned, read-only `IPromotionPricingPort` with no write method in `src/Modules/Catalog/ECommerce.Catalog.Application/Ports/IPromotionPricingPort.cs` (COM-001, PRM-001)
+- [X] T060 [P] [US2] Add `promotion_pricing.proto` and generation settings in `src/Modules/Promotion/ECommerce.Promotion.Contracts/` (contracts/promotion_pricing.proto, ARC-002)
+- [X] T061 [US2] Declare the consumer-owned, read-only `IPromotionPricingPort` with no write method in `src/Modules/Catalog/ECommerce.Catalog.Application/Ports/IPromotionPricingPort.cs` (COM-001, PRM-001 [withdrawn citation])
 - [X] T062 [US2] Implement the in-process adapter over the proto types in `src/Modules/Catalog/ECommerce.Catalog.Infrastructure/Promotion/InProcessPromotionPricingAdapter.cs` (COM-001, research.md R5)
-- [X] T063 [US2] Add the port review checklist recording call depth and transaction isolation for every port implementation in `docs/reviews/port-review-checklist.md` (COM-002, COM-003, GATE-004)
+- [X] T063 [US2] Add the port review checklist recording call depth and transaction isolation for every port implementation in `docs/reviews/port-review-checklist.md` (COM-002, COM-003, GATE-001)
 - [X] T064 [P] [US2] Add the architecture test that the port is declared in the consumer and implemented outside its domain in `tests/ECommerce.ArchitectureTests/Com001PortOwnershipTests.cs` (COM-001)
 - [X] T065 [P] [US2] Add the architecture test that no module references another's `Application` assembly in `tests/ECommerce.ArchitectureTests/Com004NoCrossModuleWriteTests.cs` (COM-004)
-- [X] T066 [P] [US2] Add the architecture test that Catalog declares no discount calculation and consumes no Promotion message as a write in `tests/ECommerce.ArchitectureTests/Prm001NoDiscountCalculationTests.cs` (PRM-001, FR-011)
+- [X] T066 [P] [US2] Add the architecture test that Catalog declares no discount calculation and consumes no Promotion message as a write in `tests/ECommerce.ArchitectureTests/Prm001NoDiscountCalculationTests.cs` (PRM-001 [withdrawn citation], FR-011)
 - [X] T067 [US2] Create the `DiscountProjection` entity — the spec's discount copy — and its configuration in `src/Modules/Catalog/ECommerce.Catalog.Domain/DiscountProjection.cs` (FR-014, data-model.md)
 - [X] T068 [US2] Add the migration creating `discount_projection` and its filtered price index in `src/Modules/Catalog/ECommerce.Catalog.Infrastructure/Migrations/` (FR-014, data-model.md)
 - [X] T069 [US2] Configure MassTransit with the RabbitMQ transport and the EF Core inbox in `src/Shared/ECommerce.Shared.Messaging/MessagingSetup.cs` (REL-003)
 - [X] T070 [US2] Implement the deduplicating consumer base inserting `(message_id, consumer)` in the business transaction in `src/Shared/ECommerce.Shared.Messaging/DeduplicatingConsumer.cs` (REL-003)
-- [X] T071 [US2] Implement envelope validation at the transport boundary in `src/Shared/ECommerce.Shared.Messaging/EnvelopeValidator.cs` (MSG-001)
+- [X] T071 [US2] Implement envelope validation at the transport boundary in `src/Shared/ECommerce.Shared.Messaging/EnvelopeValidator.cs` (COM-006)
 - [X] T072 [US2] Implement the `promotion.discount.changed.v1` consumer maintaining the discount copy, applying only newer `occurred_at` in `src/Modules/Catalog/ECommerce.Catalog.Infrastructure/Consumers/DiscountChangedConsumer.cs` (REL-004, FR-031)
 - [X] T073 [US2] Implement start-up seeding via `ListActiveDiscounts` guarded by a PostgreSQL advisory lock in `src/Modules/Catalog/ECommerce.Catalog.Infrastructure/Promotion/DiscountProjectionSeeder.cs` (FR-031, research.md R12)
-- [X] T074 [US2] Extend `GetProductDetailQuery` to resolve price through live Promotion then the discount copy then undiscounted in `src/Modules/Catalog/ECommerce.Catalog.Application/Detail/GetProductDetailQuery.cs` (FR-010, FR-012, FR-013, FR-015, PRM-003)
+- [X] T074 [US2] Extend `GetProductDetailQuery` to resolve price through live Promotion then the discount copy then undiscounted in `src/Modules/Catalog/ECommerce.Catalog.Application/Detail/GetProductDetailQuery.cs` (FR-010, FR-012, FR-013, FR-015, PRM-003 [withdrawn citation])
 - [X] T075 [US2] Log every discount applied, rejected, and fallen back with product identifier and reason code in `src/Modules/Catalog/ECommerce.Catalog.Application/Detail/GetProductDetailQuery.cs` (OBS-001, SC-009)
 - [X] T076 [US2] Enforce that a displayed discounted price is never below zero in `src/Modules/Catalog/ECommerce.Catalog.Application/Detail/GetProductDetailQuery.cs` (FR-016)
 
@@ -204,7 +204,7 @@ diacritics.
 **Independent Test**: Seed `Cà phê sữa đá`, search `ca phe` and `CÀ PHÊ`, and confirm both return it
 while a Hidden product with a matching name stays absent.
 
-### Tests for User Story 3 (write first, observe failing — TST-001)
+### Tests for User Story 3 (write first, observe failing — QAG-001)
 
 - [X] T077 [P] [US3] Failing integration test that `ca phe` and `CÀ PHÊ` both match `Cà phê sữa đá` in `tests/Catalog/ECommerce.Catalog.IntegrationTests/SearchDiacriticTests.cs` (US3/AC1, FR-017)
 - [X] T078 [P] [US3] Failing integration test that a Hidden product matching the keyword is absent in `tests/Catalog/ECommerce.Catalog.IntegrationTests/SearchVisibilityTests.cs` (US3/AC3, FR-018, SC-002)
@@ -234,7 +234,7 @@ empty list.
 **Depends on Phase 4B** for the discount copy (T067, T068, T072). Without it this story can satisfy
 only FR-027 — matching on the original price alone.
 
-### Tests for User Story 4 (write first, observe failing — TST-001)
+### Tests for User Story 4 (write first, observe failing — QAG-001)
 
 - [X] T084 [P] [US4] Failing unit tests for the price-range matching rule across both prices, including bounds exactly equal to min and to max in `tests/Catalog/ECommerce.Catalog.UnitTests/PriceRangeMatchingTests.cs` (FR-023, FR-026, FR-027, SC-010)
 - [X] T085 [P] [US4] Failing integration test that category and range combine, returning only products satisfying both, in `tests/Catalog/ECommerce.Catalog.IntegrationTests/CombinedFilterTests.cs` (US4/AC1, FR-021)
@@ -281,10 +281,10 @@ endpoint to exist, and the evidence the success criteria demand.
 
 ### Final validation
 
-- [X] T104 Add the CI event-schema compatibility check against the main branch in `.github/workflows/ci.yml` (MSG-003, GATE-003; sequential after T007)
-- [X] T105 [P] Document the module's boundaries, schema ownership, and event ownership in `docs/context-map.md` (STK-004)
+- [X] T104 Add the CI event-schema compatibility check against the main branch in `.github/workflows/ci.yml` (COM-008, GATE-001; sequential after T007)
+- [X] T105 [P] Document the module's boundaries, schema ownership, and event ownership in `docs/context-map.md` (not a constitution rule — a plan-level statement)
 - [X] T106 Run every scenario in `specs/002-product-catalog/quickstart.md` and record the results
-- [X] T107 Verify every rule identifier cited in `specs/002-product-catalog/plan.md` has a passing named test in `tests/ECommerce.ArchitectureTests/` (GATE-001, GOV-005)
+- [X] T107 Verify every rule identifier cited in `specs/002-product-catalog/plan.md` has a passing named test in `tests/ECommerce.ArchitectureTests/` (GATE-001, GATE-001)
 
 ---
 
@@ -312,7 +312,7 @@ endpoint to exist, and the evidence the success criteria demand.
 
 ### Within Each User Story
 
-- Tests are written and observed failing before implementation (TST-001, NON-NEGOTIABLE)
+- Tests are written and observed failing before implementation (QAG-001, NON-NEGOTIABLE)
 - Domain types before EF configurations before migrations
 - Queries before endpoints
 - Story complete and independently demonstrable before the next priority
@@ -332,12 +332,12 @@ endpoint to exist, and the evidence the success criteria demand.
 ## Parallel Example: Phase 2 Foundational
 
 ```bash
-# Write the six architecture gates together, observe them red (TST-001):
-Task: "MOD-001 test in tests/ECommerce.ArchitectureTests/Mod001ModuleReferencesTests.cs"
-Task: "MOD-002 test in tests/ECommerce.ArchitectureTests/Mod002ContractsContentTests.cs"
-Task: "MOD-003 test in tests/ECommerce.ArchitectureTests/Mod003SharedPrimitivesTests.cs"
-Task: "MOD-005 test in tests/ECommerce.ArchitectureTests/Mod005ModuleSetTests.cs"
-Task: "MON-001 test in tests/ECommerce.ArchitectureTests/Mon001IntegerMoneyTests.cs"
+# Write the six architecture gates together, observe them red (QAG-001):
+Task: "ARC-001 test in tests/ECommerce.ArchitectureTests/Mod001ModuleReferencesTests.cs"
+Task: "ARC-002 test in tests/ECommerce.ArchitectureTests/Mod002ContractsContentTests.cs"
+Task: "ARC-003 test in tests/ECommerce.ArchitectureTests/Mod003SharedPrimitivesTests.cs"
+Task: "MOD-005 [withdrawn citation] test in tests/ECommerce.ArchitectureTests/Mod005ModuleSetTests.cs"
+Task: "TXN-006 test in tests/ECommerce.ArchitectureTests/Mon001IntegerMoneyTests.cs"
 Task: "TXN-002 test in tests/ECommerce.ArchitectureTests/Txn002NoDistributedTransactionTests.cs"
 
 # Then the three sibling domain types together, once Product lands:

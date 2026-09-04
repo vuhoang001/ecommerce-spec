@@ -3,11 +3,11 @@
 **Publisher**: Promotion module | **Consumer**: Catalog module (the one consumer this feature
 registers) | **Transport**: RabbitMQ via MassTransit
 
-Named per MSG-002's `<context>.<aggregate>.<past-tense-verb>.v<N>`. Consumed to maintain
+Named per COM-007's `<context>.<aggregate>.<past-tense-verb>.v<N>`. Consumed to maintain
 `catalog.discount_projection` (research.md R1). Breaking changes require `.v2` alongside `.v1` until
-Catalog has migrated (MSG-003).
+Catalog has migrated (COM-008).
 
-## Envelope (MSG-001)
+## Envelope (COM-006)
 
 Every message carries `message_id`, `type`, `version`, `occurred_at`, `correlation_id`, and
 `causation_id`. A message missing any of these is rejected at the transport boundary.
@@ -19,7 +19,7 @@ Every message carries `message_id`, `type`, `version`, `occurred_at`, `correlati
 | `product_id` | uuid | Which product's pricing changed |
 | `promotion_id` | uuid | Which promotion caused it |
 | `outcome` | enum | `Applied` \| `Withdrawn` |
-| `discounted_price_minor` | int64 | Present when `Applied`; integer minor units (MON-001) |
+| `discounted_price_minor` | int64 | Present when `Applied`; integer minor units (TXN-006) |
 | `currency_code` | string | ISO 4217 |
 
 ## Consumer obligations

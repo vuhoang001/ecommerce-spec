@@ -3,10 +3,10 @@ using FluentAssertions;
 namespace ECommerce.ArchitectureTests;
 
 /// <summary>
-/// MOD-003: Shared projects MUST be limited to technical primitives that would still make
+/// ARC-003: Shared projects MUST be limited to technical primitives that would still make
 /// sense in a banking application. The banned words below all fail that test.
 /// </summary>
-public class Mod003SharedPrimitivesTests
+public class Arc003SharedPrimitivesTests
 {
     private static readonly string[] BusinessVocabulary =
         ["Product", "Category", "Cart", "Catalog", "Voucher", "Promotion", "Discount", "Stock", "Order"];
@@ -28,6 +28,6 @@ public class Mod003SharedPrimitivesTests
         }
 
         violations.Should().BeEmpty(
-            "MOD-003 asks whether the type would still make sense in a banking application");
+            "ARC-003 asks whether the type would still make sense in a banking application");
     }
 }

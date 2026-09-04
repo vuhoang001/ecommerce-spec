@@ -16,7 +16,7 @@ namespace ECommerce.Catalog.Infrastructure.Consumers;
 /// REL-004 — an update applies only when the incoming <c>occurred_at</c> is newer, so
 /// reverse-order delivery converges to the same state.
 /// REL-005 — the message type ignores unknown fields; nothing here rejects an added field.
-/// MSG-001 — the envelope is validated before any effect runs.
+/// COM-006 — the envelope is validated before any effect runs.
 /// </remarks>
 public sealed class DiscountChangedHandler(CatalogDbContext db, IClock clock)
 {

@@ -57,7 +57,7 @@ public sealed class InboxDeduplicator(DbContext db)
 
     /// <summary>
     /// True only for a unique-violation on the inbox key. SQLSTATE 23505 is read without taking
-    /// a dependency on the provider, so this stays a technical primitive (MOD-003).
+    /// a dependency on the provider, so this stays a technical primitive (ARC-003).
     /// A foreign-key violation is 23503 and must NOT be mistaken for a duplicate.
     /// </summary>
     private static bool IsInboxKeyConflict(DbUpdateException exception)

@@ -4,10 +4,10 @@ using FluentAssertions;
 namespace ECommerce.ArchitectureTests;
 
 /// <summary>
-/// MON-001: every monetary value is an integer in the smallest currency unit.
+/// TXN-006: every monetary value is an integer in the smallest currency unit.
 /// Floating-point types MUST NOT appear in a monetary calculation.
 /// </summary>
-public class Mon001IntegerMoneyTests
+public class Txn006IntegerMoneyTests
 {
     private static readonly Type[] Banned = [typeof(float), typeof(double), typeof(decimal)];
 
@@ -43,7 +43,7 @@ public class Mon001IntegerMoneyTests
             }
         }
 
-        violations.Should().BeEmpty("MON-001 bans float, double and decimal from every money path");
+        violations.Should().BeEmpty("TXN-006 bans float, double and decimal from every money path");
     }
 
     private static bool IsMoneyName(string name) =>

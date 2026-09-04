@@ -1,11 +1,11 @@
 # Context Map
 
-**Satisfies**: `STK-004` — module boundaries, schema ownership, and event ownership recorded and
+**Satisfies**: `STK-004 [withdrawn citation]` — module boundaries, schema ownership, and event ownership recorded and
 kept current with the code.
 
 ## Modules
 
-`MOD-005` fixes the set at four. Adding or removing one is an amendment under `GOV-002`.
+`MOD-005 [withdrawn citation]` fixes the set at four. Adding or removing one is an amendment under `the Governance amendment clause`.
 
 | Module | Schema | Built | Owns |
 |---|---|---|---|
@@ -31,8 +31,8 @@ price and `DAT-001` forbids reading Promotion's data directly (research.md R1).
 
 | From → To | Kind | Contract | Rules |
 |---|---|---|---|
-| catalog → promotion | synchronous read | `promotion_pricing.proto` | `COM-001`, `COM-002`, `COM-003`, `PRM-001` |
-| promotion → catalog | event | `promotion.discount.changed.v1` | `REL-003`, `REL-004`, `REL-005`, `MSG-001`, `MSG-002`, `MSG-003` |
+| catalog → promotion | synchronous read | `promotion_pricing.proto` | `COM-001`, `COM-002`, `COM-003`, `PRM-001 [withdrawn citation]` |
+| promotion → catalog | event | `promotion.discount.changed.v1` | `REL-003`, `REL-004`, `REL-005`, `COM-006`, `COM-007`, `COM-008` |
 
 The port `IPromotionPricingPort` is declared in `ECommerce.Catalog.Application` — the **consumer**
 — and implemented in `ECommerce.Catalog.Infrastructure`. Transport is an in-process adapter
@@ -52,5 +52,5 @@ Tracking).
 ## Extraction readiness
 
 Every module is four assemblies — `Contracts`, `Domain`, `Application`, `Infrastructure` — so
-`MOD-001` is checkable by assembly reference and extraction moves whole projects rather than
+`ARC-001` is checkable by assembly reference and extraction moves whole projects rather than
 splitting them.

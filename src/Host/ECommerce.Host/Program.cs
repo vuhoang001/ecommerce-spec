@@ -3,6 +3,8 @@ using ECommerce.Catalog.Application.Detail;
 using ECommerce.Catalog.Application.Filter;
 using ECommerce.Catalog.Application.Ports;
 using ECommerce.Catalog.Application.Pricing;
+using ECommerce.Catalog.Application.Reads;
+using ECommerce.Catalog.Infrastructure.Reads;
 using ECommerce.Catalog.Infrastructure.Consumers;
 using ECommerce.Catalog.Infrastructure.Promotion;
 using ECommerce.Catalog.Application.Search;
@@ -26,6 +28,9 @@ builder.Services.AddDbContext<CatalogDbContext>(options =>
             ?? "Host=localhost;Database=ecommerce;Username=ecommerce;Password=ecommerce",
         npgsql => npgsql.MigrationsHistoryTable("__ef_migrations_history", CatalogDbContext.Schema)));
 
+// DAT-004: reads execute through Dapper on their own connection; the DbContext is the write
+// side only. They share a connection string so the two can never drift onto different databases.
+builder.Services.AddScoped<ICatalogReadConnection, CatalogReadConnection>();
 builder.Services.AddScoped<DbContext>(sp => sp.GetRequiredService<CatalogDbContext>());
 builder.Services.AddScoped<BrowseCategoryQuery>();
 builder.Services.AddScoped<GetProductDetailQuery>();

@@ -8,7 +8,7 @@ import "google/protobuf/timestamp.proto";
 
 // The read contract Catalog consumes. Owned by the Promotion module and published from
 // ECommerce.Promotion.Contracts. Catalog declares its own port over these types (COM-001);
-// nothing here writes to Promotion (PRM-001).
+// nothing here writes to Promotion (PRM-001 [not adopted — see architecture-burndown.md BD-005]).
 service PromotionPricing {
   // Current discount for one product. Used by the detail view (FR-010).
   rpc GetPricing(GetPricingRequest) returns (PricingResult);
@@ -22,7 +22,7 @@ service PromotionPricing {
   rpc ListActiveDiscounts(ListActiveDiscountsRequest) returns (ListActiveDiscountsResponse);
 }
 
-// Integer minor units only. No double appears anywhere in this contract (MON-001).
+// Integer minor units only. No double appears anywhere in this contract (TXN-006).
 message Money {
   int64 amount_minor = 1;
   string currency_code = 2;  // ISO 4217
@@ -51,7 +51,7 @@ message ListActiveDiscountsResponse {
   string next_page_token = 2;
 }
 
-// PRM-003 in the type system: exactly one case is always set, so "no discount and no reason"
+// PRM-003 [not adopted — see architecture-burndown.md BD-005] in the type system: exactly one case is always set, so "no discount and no reason"
 // is unrepresentable rather than merely forbidden.
 message PricingResult {
   oneof outcome {

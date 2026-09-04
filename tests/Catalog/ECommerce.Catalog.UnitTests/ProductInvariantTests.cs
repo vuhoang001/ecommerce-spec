@@ -8,7 +8,10 @@ namespace ECommerce.Catalog.UnitTests;
 public class ProductInvariantTests
 {
     private static Product Create(string name = "Cà phê sữa đá", long price = 50_000, int stock = 3)
-        => Product.Create(Guid.NewGuid(), name, "desc", Money.FromMinor(price, "VND"), stock, ProductStatus.Active);
+        => Product.Create(Guid.NewGuid(), name, "desc", Money.FromMinor(price, "VND"), stock,
+            ProductStatus.Active, CreatedAt);
+
+    private static readonly DateTimeOffset CreatedAt = new(2026, 9, 4, 12, 0, 0, TimeSpan.Zero);
 
     [Fact]
     public void Requires_a_non_empty_name()
@@ -66,7 +69,7 @@ public class ProductInvariantTests
     public void Is_visible_to_customers_only_while_active(ProductStatus status, bool visible)
     {
         // FR-001 / SC-002
-        Product.Create(Guid.NewGuid(), "x", null, Money.FromMinor(1, "VND"), 1, status)
+        Product.Create(Guid.NewGuid(), "x", null, Money.FromMinor(1, "VND"), 1, status, CreatedAt)
             .IsVisibleToCustomers.Should().Be(visible);
     }
 

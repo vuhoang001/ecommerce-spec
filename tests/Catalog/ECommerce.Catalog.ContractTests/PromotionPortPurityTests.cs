@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ECommerce.Catalog.ContractTests;
 
 /// <summary>
-/// PRM-001 (NON-NEGOTIABLE), FR-011 — the promotion module calculates and RETURNS a result; the
+/// PRM-001 [not adopted — see architecture-burndown.md BD-005] (NON-NEGOTIABLE), FR-011 — the promotion module calculates and RETURNS a result; the
 /// caller applies it. Calling the port twice with the same input yields the same result and
 /// changes no state.
 /// </summary>
@@ -44,7 +44,7 @@ public class PromotionPortPurityTests(PricingFixture fixture)
         await fixture.Promotion.GetPricingAsync(product.Id, 250_000, "VND");
         var after = await SnapshotAsync();
 
-        after.Should().Be(before, "PRM-001: promotion never mutates order or catalog data");
+        after.Should().Be(before, "PRM-001 [not adopted — see architecture-burndown.md BD-005]: promotion never mutates order or catalog data");
     }
 
     [Fact]

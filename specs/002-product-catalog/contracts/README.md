@@ -2,8 +2,8 @@
 
 | File | Owner | Direction | Constitution |
 |---|---|---|---|
-| [`promotion_pricing.proto`](./promotion_pricing.proto) | Promotion module | Catalog reads Promotion | COM-001, PRM-001, PRM-003, MON-001 |
-| [`promotion_discount_changed.md`](./promotion_discount_changed.md) | Promotion module | Catalog consumes | REL-003/004/005, MSG-001, MSG-002, MSG-003 |
+| [`promotion_pricing.proto`](./promotion_pricing.proto) | Promotion module | Catalog reads Promotion | COM-001, PRM-001 [withdrawn citation], PRM-003 [withdrawn citation], TXN-006 |
+| [`promotion_discount_changed.md`](./promotion_discount_changed.md) | Promotion module | Catalog consumes | REL-003/004/005, COM-006, COM-007, COM-008 |
 | [`catalog-storefront.openapi.yaml`](./catalog-storefront.openapi.yaml) | Catalog module | Storefront reads Catalog | FR-001..FR-037 |
 
 ## Ownership notes

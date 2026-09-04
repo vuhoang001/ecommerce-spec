@@ -1,9 +1,9 @@
 using ECommerce.Catalog.Application.Contracts;
+using Dapper;
 using ECommerce.Catalog.Application.Ports;
-using ECommerce.Catalog.Domain;
+using ECommerce.Catalog.Application.Reads;
 using ECommerce.Promotion.Contracts.V1;
 using ECommerce.Shared.Kernel.Primitives;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace ECommerce.Catalog.Application.Pricing;
@@ -13,12 +13,12 @@ namespace ECommerce.Catalog.Application.Pricing;
 /// undiscounted price.
 /// </summary>
 /// <remarks>
-/// FR-011 / PRM-001 — nothing here CALCULATES a discount. It displays what Promotion returned,
+/// FR-011 / PRM-001 [not adopted — see architecture-burndown.md BD-005] — nothing here CALCULATES a discount. It displays what Promotion returned,
 /// or a copy of what Promotion previously returned. There is no arithmetic on a discount rate
 /// anywhere in this type.
 /// </remarks>
 public sealed class ProductPriceResolver(
-    DbContext db,
+    ICatalogReadConnection connections,
     IPromotionPricingPort promotion,
     IClock clock,
     CatalogPricingOptions options,
@@ -80,12 +80,21 @@ public sealed class ProductPriceResolver(
     private async Task<PriceDisplayDto> FromCopyAsync(
         Guid productId, MoneyDto list, CancellationToken ct)
     {
-        var copy = await db.Set<DiscountProjection>()
-            .FirstOrDefaultAsync(d => d.ProductId == productId, ct);
+        // DAT-004: a read, so it runs through Dapper. discount_projection is not a
+        // visibility-governed table, so DAT-005's fragment does not apply to it.
+        using var connection = await connections.OpenAsync(ct);
+        var copy = await connection.QuerySingleOrDefaultAsync<DiscountCopyRow>(
+            new CommandDefinition("""
+                SELECT d.promotion_id            AS "PromotionId",
+                       d.discounted_price_minor  AS "DiscountedPriceMinor",
+                       d.retrieved_at            AS "RetrievedAt"
+                FROM catalog.discount_projection d
+                WHERE d.product_id = @productId
+                """, new { productId }, cancellationToken: ct));
 
         // FR-015: past the staleness limit, and when no copy is held, the undiscounted price is
         // shown — still marked possibly out of date, because Promotion could not be consulted.
-        if (copy is null || !copy.IsFresh(clock.UtcNow, options.DiscountStalenessLimit))
+        if (copy is null || clock.UtcNow - copy.RetrievedAt > options.DiscountStalenessLimit)
         {
             logger.LogInformation(
                 "No usable discount copy for {ProductId}; showing the list price marked out of date (FR-015).",
@@ -93,7 +102,7 @@ public sealed class ProductPriceResolver(
             return new PriceDisplayDto(list, Original: null, IsOutOfDate: true);
         }
 
-        var discounted = Clamp(copy.DiscountedPrice.AmountMinor);
+        var discounted = Clamp(copy.DiscountedPriceMinor);
         logger.LogInformation(
             "Discount copy used for {ProductId} from {PromotionId}, retrieved {RetrievedAt} (FR-013).",
             productId, copy.PromotionId, copy.RetrievedAt);
@@ -104,4 +113,12 @@ public sealed class ProductPriceResolver(
 
     /// <summary>FR-016 — a displayed discounted price is never below zero.</summary>
     private static long Clamp(long amountMinor) => Math.Max(0, amountMinor);
+}
+
+/// <summary>Flat row for the discount copy lookup (DAT-004).</summary>
+public sealed class DiscountCopyRow
+{
+    public Guid PromotionId { get; init; }
+    public long DiscountedPriceMinor { get; init; }
+    public DateTimeOffset RetrievedAt { get; init; }
 }

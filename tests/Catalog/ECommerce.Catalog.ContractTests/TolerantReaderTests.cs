@@ -9,7 +9,7 @@ namespace ECommerce.Catalog.ContractTests;
 
 /// <summary>
 /// REL-005 — consumers are tolerant readers: an unknown field MUST be ignored, never rejected.
-/// This is what lets Promotion add a field without a coordinated deploy (MSG-003).
+/// This is what lets Promotion add a field without a coordinated deploy (COM-008).
 /// </summary>
 [Collection("pricing")]
 public class TolerantReaderTests(PricingFixture fixture)

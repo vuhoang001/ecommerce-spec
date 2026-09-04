@@ -6,7 +6,7 @@ namespace ECommerce.Catalog.Infrastructure.Consumers;
 
 /// <summary>
 /// The transport-facing shell for <c>promotion.discount.changed.v1</c>. All behaviour —
-/// envelope validation (MSG-001), inbox deduplication (REL-003) and out-of-order tolerance
+/// envelope validation (COM-006), inbox deduplication (REL-003) and out-of-order tolerance
 /// (REL-004) — lives in <see cref="DiscountChangedHandler"/>, which is testable without a
 /// broker.
 /// </summary>

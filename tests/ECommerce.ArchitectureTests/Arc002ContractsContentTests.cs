@@ -3,10 +3,10 @@ using FluentAssertions;
 namespace ECommerce.ArchitectureTests;
 
 /// <summary>
-/// MOD-002: A .Contracts assembly MUST contain only event schemas, generated proto types
+/// ARC-002: A .Contracts assembly MUST contain only event schemas, generated proto types
 /// and port interfaces — no entities, no EF Core types, no handlers.
 /// </summary>
-public class Mod002ContractsContentTests
+public class Arc002ContractsContentTests
 {
     private static readonly string[] ForbiddenSuffixes =
         ["DbContext", "Handler", "Consumer", "Repository", "Configuration", "Migration"];
@@ -29,6 +29,6 @@ public class Mod002ContractsContentTests
             }
         }
 
-        violations.Should().BeEmpty("MOD-002 keeps .Contracts free of entities, EF types and handlers");
+        violations.Should().BeEmpty("ARC-002 keeps .Contracts free of entities, EF types and handlers");
     }
 }

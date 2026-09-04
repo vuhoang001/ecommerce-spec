@@ -1,59 +1,66 @@
+using Dapper;
 using ECommerce.Catalog.Application.Contracts;
 using ECommerce.Catalog.Application.Pricing;
-using ECommerce.Catalog.Domain;
+using ECommerce.Catalog.Application.Reads;
 using ECommerce.Shared.Kernel.Primitives;
-using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Catalog.Application.Detail;
 
 /// <summary>
-/// US2/AC1 — FR-009, FR-002: everything a customer needs to decide, at the product's list
-/// price. Discount resolution is layered on in Phase 4B; this stands alone.
+/// FR-009, FR-002 — everything a customer needs to decide, with the price resolved through
+/// live Promotion, then the discount copy, then the list price.
 /// </summary>
-public sealed class GetProductDetailQuery(DbContext db, ProductPriceResolver prices)
+/// <remarks>
+/// DAT-004 Dapper; DAT-005 shared visibility fragment, which is what makes a Hidden or
+/// Discontinued product report identically to one that never existed; DAT-006 catalog schema.
+/// </remarks>
+public sealed class GetProductDetailQuery(ICatalogReadConnection connections, ProductPriceResolver prices)
 {
     public async Task<Result<ProductDetailDto>> ExecuteAsync(Guid productId, CancellationToken ct = default)
     {
-        // The global query filter means a Hidden or Discontinued product simply is not here,
-        // so it is reported identically to one that never existed (FR-002).
-        var product = await db.Set<Product>()
-            .Where(p => p.Id == productId)
-            .Select(p => new
-            {
-                p.Id,
-                p.Name,
-                p.Description,
-                p.StockQuantity,
-                PriceMinor = EF.Property<long>(p, "_priceMinor"),
-                Currency = EF.Property<string>(p, "_currencyCode"),
-                Categories = p.Categories
-                    .OrderBy(c => c.Name)
-                    .Select(c => new CategoryRefDto(c.Id, c.Name, c.Slug)).ToList(),
-                Images = p.Images
-                    .OrderByDescending(i => i.IsPrimary).ThenBy(i => i.Position)
-                    .Select(i => new ProductImageDto(i.Url, i.Position)).ToList(),
-                PrimaryImageUrl = p.Images
-                    .OrderByDescending(i => i.IsPrimary).ThenBy(i => i.Position)
-                    .Select(i => i.Url).FirstOrDefault()
-            })
-            .FirstOrDefaultAsync(ct);
+        using var connection = await connections.OpenAsync(ct);
 
+        var product = await connection.QuerySingleOrDefaultAsync<ProductReadRow>(
+            new CommandDefinition($"""
+                SELECT p.id             AS "Id",
+                       p.name           AS "Name",
+                       p.description    AS "Description",
+                       p.price_minor    AS "PriceMinor",
+                       p.currency_code  AS "CurrencyCode",
+                       p.stock_quantity AS "StockQuantity",
+                       (SELECT i.url FROM catalog.product_image i
+                         WHERE i.product_id = p.id
+                         ORDER BY i.is_primary DESC, i.position
+                         LIMIT 1)       AS "PrimaryImageUrl"
+                FROM catalog.product p
+                WHERE p.id = @productId AND {CatalogVisibility.ActiveOnly("p")}
+                """, new { productId }, cancellationToken: ct));
+
+        // FR-002: a non-Active product simply is not here, so it is reported exactly as one that
+        // never existed — same status, same reason code, nothing disclosed.
         if (product is null)
             return Result<ProductDetailDto>.Fail(ReasonCodes.ProductNotFound, "No such product.");
 
-        // FR-010, FR-012, FR-013, FR-015: live Promotion, then the discount copy, then the
-        // list price. Catalog never calculates the discount itself (FR-011, PRM-001).
-        var price = await prices.ResolveAsync(product.Id, product.PriceMinor, product.Currency, ct);
+        var categories = (await connection.QueryAsync<CategoryRefDto>(new CommandDefinition("""
+            SELECT c.id AS "Id", c.name AS "Name", c.slug AS "Slug"
+            FROM catalog.category c
+            JOIN catalog.product_category pc ON pc.category_id = c.id
+            WHERE pc.product_id = @productId
+            ORDER BY c.name
+            """, new { productId }, cancellationToken: ct))).ToList();
+
+        var images = (await connection.QueryAsync<ProductImageDto>(new CommandDefinition("""
+            SELECT i.url AS "Url", i.position AS "Position"
+            FROM catalog.product_image i
+            WHERE i.product_id = @productId
+            ORDER BY i.is_primary DESC, i.position
+            """, new { productId }, cancellationToken: ct))).ToList();
+
+        var price = await prices.ResolveAsync(product.Id, product.PriceMinor, product.CurrencyCode, ct);
 
         return Result<ProductDetailDto>.Ok(new ProductDetailDto(
-            product.Id,
-            product.Name,
-            product.PrimaryImageUrl,
-            price,
-            product.StockQuantity == 0,
-            product.Description,
-            product.StockQuantity,
-            product.Categories,
-            product.Images));
+            product.Id, product.Name, product.PrimaryImageUrl, price,
+            product.StockQuantity == 0, product.Description, product.StockQuantity,
+            categories, images));
     }
 }

@@ -1,62 +1,67 @@
+using Dapper;
 using ECommerce.Catalog.Application.Contracts;
-using ECommerce.Catalog.Domain;
+using ECommerce.Catalog.Application.Reads;
 using ECommerce.Shared.Kernel.Primitives;
-using Microsoft.EntityFrameworkCore;
 
 namespace ECommerce.Catalog.Application.Browse;
 
 /// <summary>
-/// FR-003, FR-004, FR-005, FR-006, FR-007, FR-008 — a page of the Active products in one
-/// category, with the total and the page position always stated.
+/// FR-003..FR-008 — a page of the Active products in one category, always stating the total and
+/// the page position.
 /// </summary>
-public sealed class BrowseCategoryQuery(DbContext db)
+/// <remarks>
+/// DAT-004: this is a read, so it executes through Dapper and never calls SaveChanges.
+/// DAT-005: visibility comes from <see cref="CatalogVisibility.ActiveOnly"/>, never a
+/// hand-written clause.
+/// DAT-006: every table named here lives in the catalog schema.
+/// </remarks>
+public sealed class BrowseCategoryQuery(ICatalogReadConnection connections)
 {
     public async Task<Result<ProductPageDto>> ExecuteAsync(
         Guid categoryId, int? page, int? pageSize, CancellationToken ct = default)
     {
         var (p, size) = Paging.Normalise(page, pageSize);
+        using var connection = await connections.OpenAsync(ct);
 
-        var categoryExists = await db.Set<Category>().AnyAsync(c => c.Id == categoryId, ct);
+        var categoryExists = await connection.ExecuteScalarAsync<bool>(new CommandDefinition(
+            "SELECT EXISTS (SELECT 1 FROM catalog.category c WHERE c.id = @categoryId)",
+            new { categoryId }, cancellationToken: ct));
+
         if (!categoryExists)
             return Result<ProductPageDto>.Fail(ReasonCodes.CategoryNotFound, "No such category.");
 
-        // The global query filter keeps this to Active products (FR-001).
-        var query = db.Set<Product>().Where(x => x.Categories.Any(c => c.Id == categoryId));
+        var where = $"""
+            FROM catalog.product p
+            JOIN catalog.product_category pc ON pc.product_id = p.id
+            WHERE pc.category_id = @categoryId AND {CatalogVisibility.ActiveOnly("p")}
+            """;
 
-        var total = await query.CountAsync(ct);
+        var total = await connection.ExecuteScalarAsync<int>(new CommandDefinition(
+            $"SELECT count(*) {where}", new { categoryId }, cancellationToken: ct));
 
-        var items = await query
-            .OrderByDescending(x => x.CreatedAt)   // default ordering: newest first
-            .ThenBy(x => x.Id)                     // stable tiebreak so paging never repeats a row
-            .Skip((p - 1) * size)
-            .Take(size)
-            .Select(x => new
-            {
-                x.Id,
-                x.Name,
-                x.StockQuantity,
-                PriceMinor = EF.Property<long>(x, "_priceMinor"),
-                Currency = EF.Property<string>(x, "_currencyCode"),
-                PrimaryImageUrl = x.Images
-                    .OrderByDescending(i => i.IsPrimary).ThenBy(i => i.Position)
-                    .Select(i => i.Url).FirstOrDefault()
-            })
-            .ToListAsync(ct);
+        var rows = await connection.QueryAsync<ProductReadRow>(new CommandDefinition($"""
+            SELECT p.id                AS "Id",
+                   p.name              AS "Name",
+                   p.price_minor       AS "PriceMinor",
+                   p.currency_code     AS "CurrencyCode",
+                   p.stock_quantity    AS "StockQuantity",
+                   (SELECT i.url FROM catalog.product_image i
+                     WHERE i.product_id = p.id
+                     ORDER BY i.is_primary DESC, i.position
+                     LIMIT 1)          AS "PrimaryImageUrl"
+            {where}
+            ORDER BY p.created_at DESC, p.id
+            OFFSET @offset LIMIT @limit
+            """, new { categoryId, offset = (p - 1) * size, limit = size }, cancellationToken: ct));
 
-        var summaries = items
-            .Select(x => new ProductSummaryDto(
-                x.Id,
-                x.Name,
-                x.PrimaryImageUrl,
-                new PriceDisplayDto(new MoneyDto(x.PriceMinor, x.Currency), null, false),
-                x.StockQuantity == 0))
-            .ToList();
+        var items = rows.Select(r => new ProductSummaryDto(
+            r.Id, r.Name, r.PrimaryImageUrl,
+            new PriceDisplayDto(new MoneyDto(r.PriceMinor, r.CurrencyCode), null, false),
+            r.StockQuantity == 0)).ToList();
 
-        // FR-008: an empty page always states why it is empty; never an error.
-        string? emptyReason = summaries.Count == 0
-            ? total == 0 ? ReasonCodes.NoProductsInCategory : ReasonCodes.PageBeyondLast
-            : null;
-
-        return Result<ProductPageDto>.Ok(new ProductPageDto(summaries, p, size, total, emptyReason));
+        return Result<ProductPageDto>.Ok(new ProductPageDto(items, p, size, total,
+            items.Count == 0
+                ? total == 0 ? ReasonCodes.NoProductsInCategory : ReasonCodes.PageBeyondLast
+                : null));
     }
 }

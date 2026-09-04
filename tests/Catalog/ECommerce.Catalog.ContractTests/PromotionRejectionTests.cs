@@ -4,7 +4,7 @@ using FluentAssertions;
 namespace ECommerce.Catalog.ContractTests;
 
 /// <summary>
-/// FR-012, SC-009, PRM-003 — a promotion rejection shows the undiscounted price. The reason is
+/// FR-012, SC-009, PRM-003 [not adopted — see architecture-burndown.md BD-005] — a promotion rejection shows the undiscounted price. The reason is
 /// recorded and never shown to the shopper.
 /// </summary>
 [Collection("pricing")]
@@ -32,7 +32,7 @@ public class PromotionRejectionTests(PricingFixture fixture)
     [Fact]
     public async Task A_rejection_is_never_a_silent_skip()
     {
-        // PRM-003: the port cannot return "no discount and no reason" — the proto oneof makes
+        // PRM-003 [not adopted — see architecture-burndown.md BD-005]: the port cannot return "no discount and no reason" — the proto oneof makes
         // that case unrepresentable. This asserts the resolver honours all three arms.
         await fixture.ResetAsync();
         var product = await fixture.SeedProductAsync();

@@ -2,7 +2,7 @@
 
 **Rules enforced here**: `COM-002`, `COM-003` — both are enforced by *code review of every port
 implementation*, per the constitution. This file is the artifact that review produces, so
-`GATE-004` has something to cite.
+`GATE-001` has something to cite.
 
 Complete one block per port implementation, in the pull request that introduces or changes it.
 
@@ -20,7 +20,7 @@ assembly), a reviewer confirms every line below and records the outcome.
 - [ ] **Failure is a value, not an exception.** The port returns a discriminated result so an
       unreachable provider is a state the caller handles (FR-013), not a stack unwind.
 - [ ] **No write path.** The interface exposes no operation that changes the provider's state
-      (PRM-001, verified mechanically by `Prm001NoDiscountCalculationTests`).
+      (PRM-001 [withdrawn citation], verified mechanically by `Prm001NoDiscountCalculationTests`).
 
 ## Reviewed implementations
 
@@ -32,5 +32,5 @@ assembly), a reviewer confirms every line below and records the outcome.
 
 The constitution names review as the enforcement mechanism for `COM-002` and `COM-003`, because
 call depth and transaction ambience are properties of a call graph that an assembly-level
-architecture test cannot see. `GOV-005` allows this: a rule must be checkable by a test, a gate,
+architecture test cannot see. `GATE-001` allows this: a rule must be checkable by a test, a gate,
 **or a review checklist item**. This is that item.

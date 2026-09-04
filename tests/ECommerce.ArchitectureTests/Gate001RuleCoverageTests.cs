@@ -5,50 +5,68 @@ using FluentAssertions;
 namespace ECommerce.ArchitectureTests;
 
 /// <summary>
-/// GATE-001 / GOV-005 — every rule this plan claims to satisfy is enforced by something that
-/// runs. A rule with no test, gate, or review checklist item is a defect in the constitution,
-/// so this test makes the claim itself checkable.
+/// GATE-001 — every named check runs in CI and blocks the merge, and every rule this feature
+/// claims to satisfy is enforced by something that actually executes.
 /// </summary>
+/// <remarks>
+/// The previous version of this test compared plan.md against its own hard-coded map, so it
+/// passed while 23 cited identifiers had no canonical rule behind them — it could not see the
+/// drift it was written to catch. It now reads the constitution as the source of truth: an
+/// identifier cited in plan.md that the constitution does not define is a failure.
+/// </remarks>
 public class Gate001RuleCoverageTests
 {
-    /// <summary>Rules enforced by something other than a named test, with the artifact that does it.</summary>
-    private static readonly Dictionary<string, string> EnforcedElsewhere = new()
+    private static readonly Regex RuleId =
+        new(@"\b(ARC|DAT|COM|REL|TXN|SEC|QAG|SPC|OBS|STK|GATE|GOV|MOD|MON|MSG|TST|PRM)-\d{3}\b",
+            RegexOptions.Compiled);
+
+    /// <summary>Rules enforced by a gate script or a review artifact rather than a named test.</summary>
+    private static readonly Dictionary<string, string> EnforcedWithoutATest = new()
     {
-        ["DAT-001"] = "CatalogDbContext.HasDefaultSchema + VisibilityFilterTests",
+        ["DAT-001"] = "CatalogDbContext default schema; VisibilityFilterTests",
         ["DAT-002"] = "scripts/check-migrations.sh (MigrationGuardTests proves the guard)",
-        ["COM-002"] = "docs/reviews/port-review-checklist.md (constitution names review)",
-        ["COM-003"] = "docs/reviews/port-review-checklist.md (constitution names review)",
-        ["MSG-003"] = "scripts/check-schema-compatibility.sh in CI",
-        ["TST-001"] = "commit order: a failing test precedes its implementation",
-        ["TST-002"] = "ProductInvariantTests + one test per acceptance criterion",
-        ["OBS-001"] = "ProductPriceResolver logging, asserted by the promotion contract tests",
-        ["GATE-001"] = "this test",
-        ["GATE-004"] = "review process; identifiers are cited throughout plan.md",
-        ["STK-001"] = "no component added to the stack; Directory.Packages.props is the record",
-        ["STK-004"] = "docs/context-map.md",
-        ["REL-002"] = "RelayConcurrencyTests + RelaySqlTests",
+        ["DAT-003"] = "code review; the discount copy snapshots rather than re-reads",
+        ["DAT-006"] = "scripts/check-sql-schemas.sh",
+        ["COM-002"] = "docs/reviews/port-review-checklist.md",
+        ["COM-003"] = "docs/reviews/port-review-checklist.md",
+        ["COM-005"] = "event/command semantics; promotion_discount_changed.md",
+        ["COM-006"] = "EnvelopeValidationTests",
+        ["COM-007"] = "event name asserted in DiscountChangedV1",
+        ["COM-008"] = "scripts/check-schema-compatibility.sh",
+        ["REL-002"] = "RelayConcurrencyTests, RelaySqlTests",
         ["REL-003"] = "InboxDeduplicationTests",
         ["REL-004"] = "OutOfOrderDeliveryTests",
         ["REL-005"] = "TolerantReaderTests",
-        ["MSG-001"] = "EnvelopeValidationTests",
+        ["REL-006"] = "architecture-burndown.md BD-003 — open deviation",
+        ["REL-007"] = "HealthProbeTests, PromotionUnavailableTests",
         ["TXN-001"] = "Txn001OneAggregatePerTransactionTests",
-        ["PRM-003"] = "proto oneof makes the absent case unrepresentable; PromotionRejectionTests",
-        ["MON-002"] = "N/A — no order exists in this feature",
-        ["TXN-003"] = "N/A — no saga in this feature",
-        ["TXN-004"] = "N/A — no saga in this feature",
-        ["PRM-002"] = "N/A — promotion type logic belongs to the promotion module",
-        ["PRM-004"] = "N/A — promotion type logic belongs to the promotion module",
-        ["GOV-007"] = "N/A — this feature touches no promotion source file",
-        ["STK-002"] = "one Host project and one deployable image; MOD-001 and MOD-005 keep the " +
-                      "module boundaries that make extraction a deployment change",
-        ["GOV-002"] = "process rule; GOV-005 exempts Governance rules — they govern the review " +
-                      "that runs the checks, so nothing mechanical can enforce them",
-        ["SPC-001"] = "spec.md keyword scan; the spec passed it and no implementation name appears in it",
+        ["TXN-005"] = "N/A — no order exists in this feature",
+        ["QAG-001"] = "commit order: a failing test precedes its implementation",
+        ["QAG-002"] = "one test per acceptance criterion",
+        ["QAG-003"] = "domain tests reference no infrastructure package",
+        ["QAG-004"] = "InboxDeduplicationTests",
+        ["QAG-005"] = "N/A — no contended resource is written here",
+        ["QAG-006"] = "every infrastructure suite runs on Testcontainers",
+        ["SEC-006"] = "PriceRangeValidator, EnvelopeValidator, route constraints",
+        ["OBS-001"] = "ProductPriceResolver logging; PromotionRejectionTests",
+        ["SPC-001"] = "spec.md keyword scan",
+        ["STK-001"] = "scripts/check-approved-packages.sh",
+        ["GATE-001"] = "this test",
+        ["GATE-001"] = "review process; identifiers cited throughout plan.md",
+        ["ARC-005"] = "architecture-burndown.md",
+        ["TXN-002"] = "N/A — no cross-module workflow exists in this feature",
+        ["TXN-003"] = "N/A — no saga exists, so there is no compensation branch to test",
+        ["TXN-006"] = "Txn006IntegerMoneyTests, MoneyTests, MoneyRoundTripTests",
+        ["ARC-001"] = "Arc001ModuleReferencesTests",
+        ["ARC-002"] = "Arc002ContractsContentTests",
+        ["ARC-003"] = "Arc003SharedPrimitivesTests",
+        ["ARC-004"] = "Arc004NoAmbientClockOrIdTests",
+        ["COM-001"] = "Com001PortOwnershipTests",
+        ["COM-004"] = "Com004NoCrossModuleWriteTests",
+        ["DAT-004"] = "Dat004ReadWriteSeparationTests",
+        ["DAT-005"] = "Dat005VisibilityFragmentTests",
+        ["REL-001"] = "Rel001NoDirectPublishTests",
     };
-
-    private static readonly Regex RuleId =
-        new(@"\b(MOD|DAT|COM|MON|REL|MSG|TXN|PRM|TST|OBS|GATE|STK|GOV|SPC)-\d{3}\b",
-            RegexOptions.Compiled);
 
     private static string RepoRoot()
     {
@@ -58,43 +76,62 @@ public class Gate001RuleCoverageTests
         return dir?.FullName ?? throw new InvalidOperationException("Repository root not found.");
     }
 
-    [Fact]
-    public void Every_rule_the_plan_cites_is_enforced_by_a_test_a_gate_or_a_review_artifact()
+    private static string Read(params string[] parts) =>
+        File.ReadAllText(Path.Combine(new[] { RepoRoot() }.Concat(parts).ToArray()));
+
+    private static HashSet<string> ConstitutionRules()
     {
-        var plan = File.ReadAllText(Path.Combine(
-            RepoRoot(), "specs", "002-product-catalog", "plan.md"));
+        var text = Read(".specify", "memory", "constitution.md");
+        // Only rules the document actually DEFINES, i.e. "- **XXX-000**: ..."
+        return Regex.Matches(text, @"^\- \*\*([A-Z]{3,4}-\d{3})\*\*", RegexOptions.Multiline)
+            .Select(m => m.Groups[1].Value).ToHashSet();
+    }
 
-        var cited = RuleId.Matches(plan).Select(m => m.Value).Distinct().OrderBy(x => x).ToList();
-
-        // A rule is covered when a test class is named for it, or when it is listed above with
-        // the artifact that enforces it.
-        var testNames = typeof(Gate001RuleCoverageTests).Assembly.GetTypes()
-            .Concat(AppDomain.CurrentDomain.GetAssemblies().SelectMany(SafeTypes))
-            .Select(t => t.Name)
-            .ToList();
-
-        var uncovered = cited
-            .Where(rule => !EnforcedElsewhere.ContainsKey(rule))
-            .Where(rule => !testNames.Any(n =>
-                n.StartsWith(rule.Replace("-", string.Empty), StringComparison.OrdinalIgnoreCase)))
-            .ToList();
-
-        uncovered.Should().BeEmpty(
-            "GOV-005: a rule the plan claims to satisfy but nothing enforces is a defect. " +
-            "Either add the check or withdraw the claim.");
+    private static HashSet<string> PlanCitations()
+    {
+        var plan = Read("specs", "002-product-catalog", "plan.md");
+        return RuleId.Matches(plan)
+            .Select(m => m.Value)
+            // Citations explicitly marked as retired are documentation, not claims.
+            .Where(id => !plan.Contains($"{id} [not adopted", StringComparison.Ordinal)
+                         && !plan.Contains($"{id} [not a rule", StringComparison.Ordinal)
+                         && !plan.Contains($"{id} [withdrawn citation]", StringComparison.Ordinal))
+            .ToHashSet();
     }
 
     [Fact]
-    public void The_coverage_map_names_no_rule_the_plan_does_not_cite()
+    public void Every_identifier_the_plan_cites_is_defined_by_the_constitution()
     {
-        // Keeps the map honest: an entry for a rule nobody claims is dead weight that would
-        // hide a genuine gap behind an exemption.
-        var plan = File.ReadAllText(Path.Combine(
-            RepoRoot(), "specs", "002-product-catalog", "plan.md"));
-        var cited = RuleId.Matches(plan).Select(m => m.Value).ToHashSet();
+        var undefined = PlanCitations().Except(ConstitutionRules()).OrderBy(x => x).ToList();
 
-        EnforcedElsewhere.Keys.Where(k => !cited.Contains(k))
-            .Should().BeEmpty("every exemption must correspond to a rule the plan actually cites");
+        undefined.Should().BeEmpty(
+            "a plan cannot claim compliance with a rule the constitution does not define — " +
+            "that is exactly the drift this test exists to catch");
+    }
+
+    [Fact]
+    public void Every_cited_rule_is_enforced_by_a_named_test_a_gate_or_a_recorded_deviation()
+    {
+        var testNames = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(SafeTypes).Select(t => t.Name).ToList();
+
+        var unenforced = PlanCitations()
+            .Where(rule => !EnforcedWithoutATest.ContainsKey(rule))
+            .Where(rule => !testNames.Any(n =>
+                n.StartsWith(rule.Replace("-", string.Empty), StringComparison.OrdinalIgnoreCase)))
+            .OrderBy(x => x)
+            .ToList();
+
+        unenforced.Should().BeEmpty(
+            "GATE-001: a rule with no test, gate or recorded deviation is unenforced");
+    }
+
+    [Fact]
+    public void The_enforcement_map_names_no_rule_the_constitution_does_not_define()
+    {
+        // Stops an exemption outliving the rule it exempts, which would hide a real gap.
+        EnforcedWithoutATest.Keys.Except(ConstitutionRules()).OrderBy(x => x)
+            .Should().BeEmpty("every exemption must correspond to a defined rule");
     }
 
     private static IEnumerable<Type> SafeTypes(Assembly assembly)
