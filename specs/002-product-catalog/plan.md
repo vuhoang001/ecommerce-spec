@@ -10,8 +10,7 @@ Deliver the customer-facing read path of the catalogue: browse a category, open 
 name, and filter by category and price range — with discount display fed by the Promotion module and
 degraded gracefully when Promotion is unreachable.
 
-Technical approach: a .NET 8 modular monolith, one deployable host process, with the Catalog module
-owning a `catalog` PostgreSQL schema through its own `DbContext`. Discount data is read through a
+Technical approach: a .NET 8 modular monolith, one deployable host process, with the Catalog module":"
 Catalog-owned port over a proto-defined contract, served in-process today and by a gRPC client after
 extraction. Search uses PostgreSQL `unaccent` + `pg_trgm` to satisfy the case- and
 diacritic-insensitive partial match. Money is an integer minor-unit `Money` type end to end.

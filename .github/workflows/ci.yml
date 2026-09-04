@@ -61,6 +61,25 @@ jobs:
   # toolchain (DEP-002).
   backend-image:
     runs-on: ubuntu-latest
+
+    # The image requires PostgreSQL: DEP-001 makes it apply its own migrations at start-up, so a
+    # smoke test without a database would be testing the wrong thing -- it would prove only that
+    # the process exits. DEP-002 is about not needing the OTHER DEPLOYABLE's toolchain, which
+    # this does not; no .NET SDK and no frontend source are present in this job.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ecommerce
+          POSTGRES_USER: ecommerce
+          POSTGRES_PASSWORD: ecommerce
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ecommerce"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -77,18 +96,23 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: The image starts and reports liveness
+      - name: The image starts, migrates itself and reports readiness
         run: |
-          docker run -d --name catalog -p 8080:8080 ecommerce-host:ci
-          for i in $(seq 1 30); do
-            if curl -fsS http://localhost:8080/health/live >/dev/null 2>&1; then
-              echo "liveness OK"
+          docker run -d --name catalog --network host \
+            -e 'ConnectionStrings__Catalog=Host=localhost;Database=ecommerce;Username=ecommerce;Password=ecommerce' \
+            ecommerce-host:ci
+          for i in $(seq 1 40); do
+            # Readiness, not liveness: it is only 200 once migrations have been applied, so this
+            # proves the image brought up its own schema (DEP-001, T109) on an empty database.
+            if curl -fsS http://localhost:8080/health/ready >/dev/null 2>&1; then
+              echo "readiness OK -- the image migrated an empty database itself"
+              docker logs catalog 2>&1 | grep -i "migration" || true
               docker rm -f catalog
               exit 0
             fi
             sleep 2
           done
-          echo "the image did not report liveness within 60s"
+          echo "the image did not report readiness within 80s"
           docker logs catalog
           docker rm -f catalog
           exit 1

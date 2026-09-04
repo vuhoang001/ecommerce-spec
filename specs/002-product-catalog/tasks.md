@@ -404,3 +404,26 @@ of gap found. Nothing above this line was renumbered, reordered, or altered.
 **Checkpoint**: T108 and T109 close the two constitution violations. T110, T111 and T112 are the
 prerequisites a storefront feature depends on — without them a separate-origin frontend cannot
 call the catalogue and no documented scenario can be run by hand.
+
+---
+
+## Phase 9: Convergence
+
+Appended by `/speckit-converge`. Nothing above this line was renumbered, reordered, or altered.
+Phase 8's tasks are complete and left untouched.
+
+### Constitution violations (CRITICAL — resolve first)
+
+- [ ] T116 CRITICAL Make the container healthcheck executable — the runtime image `mcr.microsoft.com/dotnet/aspnet:8.0` contains neither `wget` nor `curl`, so the `HEALTHCHECK` in `src/Host/ECommerce.Host/Dockerfile` fails on every probe and the container reports `unhealthy` while serving 200s; switch the runtime stage to `mcr.microsoft.com/dotnet/aspnet:8.0-alpine`, whose busybox provides `wget`, and add a test or CI step asserting the built image reaches `healthy` per Constitution XI / DEP-001 (contradicts)
+- [ ] T117 CRITICAL Implement the SPC-001 keyword scan the enforcement map already claims exists — add `scripts/check-spec-keywords.sh` scanning every `specs/*/spec.md` for framework, library, database, protocol and pattern names, wire it into `.github/workflows/ci.yml` as a blocking step, and correct the `SPC-001` entry in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` to name the script per Constitution VIII / SPC-001 and Constitution Governance / GATE-001 (missing)
+
+### Enforcement-map accuracy
+
+- [ ] T118 [P] Correct the stale `REL-006` justification in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — it names BD-003 as an open deviation, but BD-003 is in the closed table of `architecture-burndown.md`; point it at the dead-letter configuration and `docs/runbooks/catalog-messaging-replay.md`, and reference the narrower open alerting gap instead per Constitution Governance / GATE-001 (partial)
+- [ ] T119 [P] Remove the duplicated `["GATE-001"]` key in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — collection-initialiser indexer syntax silently overwrites, so the second assignment wins and the recorded justification is not the one intended per Constitution Governance / GATE-001 (partial)
+
+**Checkpoint**: T116 restores the ability of any orchestrator to distinguish a live container from
+a dead one — `depends_on: service_healthy`, restart policies and deploy gates are all reading a
+permanently false signal until it lands. T117 closes the gap GATE-001 names explicitly: a rule
+whose check does not run is unenforced, and `001-user-management/spec.md` already carries keywords
+nothing catches.
