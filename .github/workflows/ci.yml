@@ -32,6 +32,10 @@ jobs:
       - name: Event schema compatibility
         run: ./scripts/check-schema-compatibility.sh origin/main
 
+      # SPC-001 — a specification names behaviour, never a technology
+      - name: Specification keyword scan
+        run: ./scripts/check-spec-keywords.sh
+
       # DEP-001 — every deployable has a Dockerfile that builds itself
       - name: Deployable image check
         run: ./scripts/check-deployable-images.sh src
@@ -101,18 +105,49 @@ jobs:
           docker run -d --name catalog --network host \
             -e 'ConnectionStrings__Catalog=Host=localhost;Database=ecommerce;Username=ecommerce;Password=ecommerce' \
             ecommerce-host:ci
+          # Two separate signals, and the job asserts BOTH.
+          #
+          # Readiness proves the image migrated an empty database itself (DEP-001).
+          # Docker HEALTH proves the HEALTHCHECK actually works -- the previous version of this
+          # job asserted readiness only, so it passed for some time with a HEALTHCHECK that could
+          # never succeed: the runtime image had no wget, every probe failed, and the container
+          # reported `unhealthy` while serving 200s. Anything reading Docker health was acting on
+          # a permanently false signal.
+          ready=""
           for i in $(seq 1 40); do
-            # Readiness, not liveness: it is only 200 once migrations have been applied, so this
-            # proves the image brought up its own schema (DEP-001, T109) on an empty database.
             if curl -fsS http://localhost:8080/health/ready >/dev/null 2>&1; then
+              ready="yes"
               echo "readiness OK -- the image migrated an empty database itself"
-              docker logs catalog 2>&1 | grep -i "migration" || true
-              docker rm -f catalog
-              exit 0
+              docker logs catalog 2>&1 | grep -i "Applying .* pending migration" || true
+              break
             fi
             sleep 2
           done
-          echo "the image did not report readiness within 80s"
-          docker logs catalog
+
+          if [ -z "$ready" ]; then
+            echo "the image did not report readiness within 80s"
+            docker logs catalog
+            docker rm -f catalog
+            exit 1
+          fi
+
+          for i in $(seq 1 30); do
+            health="$(docker inspect -f '{{.State.Health.Status}}' catalog)"
+            echo "docker health: $health"
+            if [ "$health" = "healthy" ]; then
+              docker rm -f catalog
+              exit 0
+            fi
+            if [ "$health" = "unhealthy" ]; then
+              echo "the HEALTHCHECK is failing. Last probe output:"
+              docker inspect -f '{{range .State.Health.Log}}{{.Output}}{{end}}' catalog
+              docker rm -f catalog
+              exit 1
+            fi
+            sleep 3
+          done
+
+          echo "the container never reached a healthy state"
+          docker inspect -f '{{range .State.Health.Log}}{{.Output}}{{end}}' catalog
           docker rm -f catalog
           exit 1

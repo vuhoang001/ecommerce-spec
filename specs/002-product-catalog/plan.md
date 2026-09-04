@@ -125,10 +125,13 @@ Assessed against constitution v3.0.0. Every rule with a bearing on this feature:
 | ARC-005 | PASS | Deviations are recorded in `architecture-burndown.md` with an owner and a closing condition. |
 | REL-007 | PASS | A Promotion outage never blocks a catalogue read: FR-013 falls back to the discount copy, and readiness deliberately excludes Promotion. |
 | SEC-006 | PASS | Every input is validated server-side at the boundary — price range, keyword, message envelope, route constraints. |
-| SEC-001..005 | N/A | No credential, authorization decision, or security-relevant event exists on an anonymous read path. Judgement recorded in `architecture-burndown.md`. |
+| SEC-001 | N/A | No credential is created, stored or verified by this feature. Password rules bind whichever feature owns authentication. Recorded in `architecture-burndown.md`. |
+| SEC-002 | N/A | No credential storage exists here, so there is nothing to hash. Recorded in `architecture-burndown.md`. |
+| SEC-003 | N/A for authentication, **concern met anyway** | No account response exists. The underlying requirement — a response must not disclose whether an identifier exists — is satisfied by FR-002 and asserted byte-for-byte by `ProductDetailVisibilityTests`. |
+| SEC-004 | N/A | The catalogue is anonymous (FR-034, SC-013) and exposes no per-resource permission, so there is no role or resource to check. Revisit the moment any endpoint reads a customer identity. |
+| SEC-005 | N/A | No security-relevant event occurs on an anonymous read path. Promotion decisions are logged under OBS-001, which is an operational record, not a security one. |
 | QAG-003 | PASS | Domain tests reference no infrastructure package. |
 | QAG-006 | PASS | Every infrastructure suite runs against real PostgreSQL in Testcontainers, never a fake. |
-| STK-001 | PASS | `scripts/check-approved-packages.sh` maps every `PackageVersion` to an approved component. The stack was amended to 2.1.0 to name gRPC, Serilog and health checks, which this feature already required. |
 | DEP-001 | PASS | `src/Host/ECommerce.Host/Dockerfile` builds the deployable inside the image — restore and publish happen in the build stage, never on the runner. Enforced by `scripts/check-deployable-images.sh` and the `backend-image` CI job. |
 | DEP-002 | PASS | The `backend-image` job installs no .NET SDK and runs no `dotnet` command on the runner, so a green result proves the image builds from the backend source tree alone, without the frontend's toolchain. |
 | UIX-001 | N/A | No frontend exists in this repository. The rule binds the frontend feature. |
@@ -139,32 +142,8 @@ Assessed against constitution v3.0.0. Every rule with a bearing on this feature:
 | COM-007 | PASS | The event name follows `<context>.<aggregate>.<past-tense-verb>.v<N>`. |
 | DAT-003 | PASS | The discount copy snapshots a Promotion fact at the time of the event and is never re-read from Promotion for a historical record. |
 | REL-006 | **OPEN** | No dead-letter queue is configured and no replay procedure is written. Recorded as `BD-003` in `architecture-burndown.md`. |
-| SEC-002..005 | N/A | No credential storage, authorization decision, or security-relevant event exists on an anonymous read path. Judgement recorded in `architecture-burndown.md`. |
 | TXN-004 | WITHDRAWN | Superseded by `TXN-006` in constitution v2.0.0. Cited here only to record that the withdrawal was noticed. |
 | GATE-001 | PASS | Architecture suite, migration scanner, and contract tests all run in CI and block the merge. |
-| DAT-004 | PASS | All four read paths execute through Dapper; no `*Query` takes a `DbContext`. Enforced by `Dat004ReadWriteSeparationTests`. |
-| DAT-005 | PASS | Read visibility comes from the shared `CatalogVisibility` fragment. Enforced by `Dat005VisibilityFragmentTests`, which also forbids a hand-written clause at any call site. |
-| DAT-006 | PASS | `scripts/check-sql-schemas.sh` scans raw SQL for schema-qualified names outside the owning module. |
-| ARC-004 | PASS | `Product.Create` takes an injected timestamp; the domain reads no clock and mints no identifier. Enforced by `Arc004NoAmbientClockOrIdTests`. |
-| ARC-005 | PASS | Deviations are recorded in `architecture-burndown.md` with an owner and a closing condition. |
-| REL-007 | PASS | A Promotion outage never blocks a catalogue read: FR-013 falls back to the discount copy, and readiness deliberately excludes Promotion. |
-| SEC-006 | PASS | Every input is validated server-side at the boundary — price range, keyword, message envelope, route constraints. |
-| SEC-001..005 | N/A | No credential, authorization decision, or security-relevant event exists on an anonymous read path. Judgement recorded in `architecture-burndown.md`. |
-| QAG-003 | PASS | Domain tests reference no infrastructure package. |
-| QAG-006 | PASS | Every infrastructure suite runs against real PostgreSQL in Testcontainers, never a fake. |
-| STK-001 | PASS | `scripts/check-approved-packages.sh` maps every `PackageVersion` to an approved component. The stack was amended to 2.1.0 to name gRPC, Serilog and health checks, which this feature already required. |
-| DEP-001 | PASS | `src/Host/ECommerce.Host/Dockerfile` builds the deployable inside the image — restore and publish happen in the build stage, never on the runner. Enforced by `scripts/check-deployable-images.sh` and the `backend-image` CI job. |
-| DEP-002 | PASS | The `backend-image` job installs no .NET SDK and runs no `dotnet` command on the runner, so a green result proves the image builds from the backend source tree alone, without the frontend's toolchain. |
-| UIX-001 | N/A | No frontend exists in this repository. The rule binds the frontend feature. |
-| UIX-002 | PASS, partial | The OpenAPI contract is checked in and `OpenApiContractConformanceTests` fails if a documented path is unroutable or a route is undocumented. The host does not yet *emit* the document, so a generated client is validated against the contract rather than against generated output. |
-| UIX-003 | PASS, enabling | Every monetary value crosses the wire as `amountMinor` (integer) plus a currency code, never a decimal — which is what makes client-side rendering without arithmetic possible. JavaScript's single float numeric type is why `TXN-006`'s guarantee would otherwise be lost at this boundary. |
-| UIX-004, UIX-005 | N/A | Keyboard operability and the component library bind the frontend feature. |
-| COM-005 | PASS | `promotion.discount.changed.v1` is a past-tense fact, broadcast, with any number of consumers. No command is defined by this feature. |
-| COM-007 | PASS | The event name follows `<context>.<aggregate>.<past-tense-verb>.v<N>`. |
-| DAT-003 | PASS | The discount copy snapshots a Promotion fact at the time of the event and is never re-read from Promotion for a historical record. |
-| SEC-002..005 | N/A | No credential storage, authorization decision, or security-relevant event exists on an anonymous read path. Judgement recorded in `architecture-burndown.md`. |
-| TXN-004 | WITHDRAWN | Superseded by `TXN-006` in constitution v2.0.0. Cited here only to record that the withdrawal was noticed. |
-| GATE-001 | PASS | Rule identifiers are cited throughout this plan and will be cited in tasks. |
 | GOV-007 [withdrawn citation] | N/A | This feature touches no file in the promotion module beyond its `.Contracts` proto. |
 
 **Gate result: PASS with two items carried to Complexity Tracking.** No rule is violated. Two are
@@ -206,7 +185,7 @@ src/
 │       └── ECommerce.Promotion.Contracts/     # promotion_pricing.proto only; module body is a later feature
 └── Shared/
     ├── ECommerce.Shared.Kernel/               # Money, Result, IClock, PagedResult (ARC-003)
-    └── ECommerce.Shared.Messaging/            # outbox table, relay, inbox consumer base (REL-001..003)
+    └── ECommerce.Shared.Messaging/            # outbox table, relay, inbox consumer base (REL-001, REL-002, REL-003)
 
 tests/
 ├── ECommerce.ArchitectureTests/               # ARC-001/002/005, COM-001/004, TXN-006, PRM-001 [withdrawn citation],
@@ -224,8 +203,13 @@ tests/
 
 docs/
 ├── context-map.md                             # module boundaries and event ownership (not a constitution rule — a plan-level statement)
+├── quickstart-results.md                      # the recorded quickstart run (T103)
 ├── reviews/port-review-checklist.md           # COM-002 call depth, COM-003 transaction isolation
-└── runbooks/catalog-recovery-drill.md         # SC-016 recovery evidence
+└── runbooks/
+    ├── catalog-messaging-replay.md            # REL-006 dead-letter and replay procedure
+    └── catalog-recovery-drill.md              # SC-016 recovery evidence
+
+architecture-burndown.md                       # ARC-005 known deviations, with closing conditions
 ```
 
 **Structure Decision**: One solution, one host image run as two or more identical instances. `docs/`

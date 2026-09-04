@@ -414,16 +414,38 @@ Phase 8's tasks are complete and left untouched.
 
 ### Constitution violations (CRITICAL — resolve first)
 
-- [ ] T116 CRITICAL Make the container healthcheck executable — the runtime image `mcr.microsoft.com/dotnet/aspnet:8.0` contains neither `wget` nor `curl`, so the `HEALTHCHECK` in `src/Host/ECommerce.Host/Dockerfile` fails on every probe and the container reports `unhealthy` while serving 200s; switch the runtime stage to `mcr.microsoft.com/dotnet/aspnet:8.0-alpine`, whose busybox provides `wget`, and add a test or CI step asserting the built image reaches `healthy` per Constitution XI / DEP-001 (contradicts)
-- [ ] T117 CRITICAL Implement the SPC-001 keyword scan the enforcement map already claims exists — add `scripts/check-spec-keywords.sh` scanning every `specs/*/spec.md` for framework, library, database, protocol and pattern names, wire it into `.github/workflows/ci.yml` as a blocking step, and correct the `SPC-001` entry in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` to name the script per Constitution VIII / SPC-001 and Constitution Governance / GATE-001 (missing)
+- [X] T116 CRITICAL Make the container healthcheck executable — the runtime image `mcr.microsoft.com/dotnet/aspnet:8.0` contains neither `wget` nor `curl`, so the `HEALTHCHECK` in `src/Host/ECommerce.Host/Dockerfile` fails on every probe and the container reports `unhealthy` while serving 200s; switch the runtime stage to `mcr.microsoft.com/dotnet/aspnet:8.0-alpine`, whose busybox provides `wget`, and add a test or CI step asserting the built image reaches `healthy` per Constitution XI / DEP-001 (contradicts)
+- [X] T117 CRITICAL Implement the SPC-001 keyword scan the enforcement map already claims exists — add `scripts/check-spec-keywords.sh` scanning every `specs/*/spec.md` for framework, library, database, protocol and pattern names, wire it into `.github/workflows/ci.yml` as a blocking step, and correct the `SPC-001` entry in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` to name the script per Constitution VIII / SPC-001 and Constitution Governance / GATE-001 (missing)
 
 ### Enforcement-map accuracy
 
-- [ ] T118 [P] Correct the stale `REL-006` justification in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — it names BD-003 as an open deviation, but BD-003 is in the closed table of `architecture-burndown.md`; point it at the dead-letter configuration and `docs/runbooks/catalog-messaging-replay.md`, and reference the narrower open alerting gap instead per Constitution Governance / GATE-001 (partial)
-- [ ] T119 [P] Remove the duplicated `["GATE-001"]` key in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — collection-initialiser indexer syntax silently overwrites, so the second assignment wins and the recorded justification is not the one intended per Constitution Governance / GATE-001 (partial)
+- [X] T118 [P] Correct the stale `REL-006` justification in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — it names BD-003 as an open deviation, but BD-003 is in the closed table of `architecture-burndown.md`; point it at the dead-letter configuration and `docs/runbooks/catalog-messaging-replay.md`, and reference the narrower open alerting gap instead per Constitution Governance / GATE-001 (partial)
+- [X] T119 Remove the duplicated `["GATE-001"]` key in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — collection-initialiser indexer syntax silently overwrites, so the second assignment wins and the recorded justification is not the one intended per Constitution Governance / GATE-001 (partial; sequential after T118 — same file)
 
 **Checkpoint**: T116 restores the ability of any orchestrator to distinguish a live container from
 a dead one — `depends_on: service_healthy`, restart policies and deploy gates are all reading a
 permanently false signal until it lands. T117 closes the gap GATE-001 names explicitly: a rule
 whose check does not run is unenforced, and `001-user-management/spec.md` already carries keywords
 nothing catches.
+
+### Close the class, not the instance
+
+- [X] T120 CRITICAL Validate the enforcement map itself in `tests/ECommerce.ArchitectureTests/Gate001RuleCoverageTests.cs` — every `scripts/…` or `docs/…` path a justification names MUST exist on disk and, for scripts, appear as a step in `.github/workflows/ci.yml`; every `…Tests` class name MUST resolve to a declared test class; every `BD-###` reference MUST still be open in `architecture-burndown.md`. The map is currently free text that nothing verifies, which is how `SPC-001` claimed a scan that was never written and `REL-006` kept citing a closed deviation per Constitution Governance / GATE-001 (missing)
+- [X] T121 [P] Assert in the `backend-image` CI job that the built container reaches Docker health state `healthy`, not merely that it answers readiness — the current job would pass with a `HEALTHCHECK` that never succeeds, which is exactly the T116 defect per Constitution XI / DEP-001 (partial)
+
+---
+
+## Phase 10: Convergence
+
+Appended by `/speckit-converge`. Phase 8 and Phase 9 are left untouched; nothing above this line
+was renumbered, reordered, or altered. The defects Phase 9 records were independently verified
+before this run declined to duplicate them.
+
+### Evidence accuracy
+
+- [X] T122 Re-run the `quickstart.md` scenarios and refresh the recorded totals in `docs/quickstart-results.md`, which still reports 159 tests against an actual 177 — the file is the artifact T103 produced as evidence, so a stale count evidences a state that no longer exists per quickstart.md, T103 (partial)
+- [X] T123 [P] Add `docs/runbooks/catalog-messaging-replay.md` and `architecture-burndown.md` to the Project Structure tree in `specs/002-product-catalog/plan.md`, which lists neither, so the plan no longer describes the files the feature actually ships per plan.md Project Structure (partial)
+
+**Checkpoint**: Neither task changes behaviour. Both close gaps between what the artifacts record
+and what the repository contains — the same drift class Phase 9's T118 and T120 address for the
+enforcement map, here applied to the evidence and structure documents.
